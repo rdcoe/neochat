@@ -1,0 +1,62 @@
+# MongoDB Helm Chart Configuration
+# Install with: helm install mongodb bitnami/mongodb -f mongodb-helm.yml -n neochat
+
+architecture: replicaset
+replicaCount: 3
+
+auth:
+  enabled: true
+  rootPassword: mongodb_root_password
+  username: neochat
+  password: neochat_mongo_password
+  database: neochat
+
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClass: "standard"
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "1Gi"
+    cpu: "500m"
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+
+# TTL Index for chat events (30 days)
+initdbScriptsConfigMap: mongodb-init-scripts
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-init-scripts
+  namespace: neochat
+data:
+  init.js: |
+    db = db.getSiblingDB('neochat');
+    
+    // Create collections
+    db.createCollection('conversations');
+    db.createCollection('mongoeventdocument');
+    db.createCollection('users');
+    
+    // Create indexes
+    db.conversations.createIndex({ "conversationId": 1 }, { unique: true });
+    db.conversations.createIndex({ "participants": 1 });
+    db.conversations.createIndex({ "overseers": 1 });
+    db.conversations.createIndex({ "updatedAt": -1 });
+    
+    // TTL index for event documents (30 days)
+    db.mongoeventdocument.createIndex({ "createdAt": 1 }, { expireAfterSeconds: 2592000 });
+    db.mongoeventdocument.createIndex({ "conversationId": 1, "timestamp": -1 });
+    
+    db.users.createIndex({ "userId": 1 }, { unique: true });
+    db.users.createIndex({ "email": 1 });
+    db.users.createIndex({ "roles": 1 });

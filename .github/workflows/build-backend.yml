@@ -1,0 +1,46 @@
+name: Build Backend
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        java: [ '21' ]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'temurin'
+          cache: 'maven'
+      
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
+      
+      - name: Run tests
+        run: mvn test
+      
+      - name: Build Docker images
+        run: |
+          docker build -f docker/Dockerfile -t neochat/chat-service:${{ github.sha }} .
+          docker build -f docker/Dockerfile -t neochat/admin-service:${{ github.sha }} .
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: neochat-backend-${{ github.sha }}
+          path: |
+            chat-service/target/*.jar
+            admin-service/target/*.jar
+          retention-days: 7

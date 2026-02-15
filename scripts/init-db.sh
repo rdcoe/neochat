@@ -1,0 +1,86 @@
+#!/bin/bash
+# Initialize PostgreSQL database with required tables and partitions
+
+set -e
+
+POSTGRES_HOST=${POSTGRES_HOST:-localhost}
+POSTGRES_PORT=${POSTGRES_PORT:-5432}
+POSTGRES_USER=${POSTGRES_USER:-neochat}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-neochat}
+POSTGRES_DB=${POSTGRES_DB:-neochat}
+
+echo "Initializing PostgreSQL database: $POSTGRES_DB"
+
+# Export password for psql
+export PGPASSWORD=$POSTGRES_PASSWORD
+
+# Create chat_events table with partitioning
+psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<-EOSQL
+    -- Create chat_events table with range partitioning on timestamp
+    CREATE TABLE IF NOT EXISTS chat_events (
+        id UUID PRIMARY KEY,
+        conversation_id VARCHAR(255) NOT NULL,
+        event_type VARCHAR(50) NOT NULL,
+        payload TEXT,
+        user_id VARCHAR(255) NOT NULL,
+        timestamp TIMESTAMP NOT NULL
+    ) PARTITION BY RANGE (timestamp);
+
+    -- Create default partition
+    CREATE TABLE IF NOT EXISTS chat_events_default PARTITION OF chat_events DEFAULT;
+
+    -- Create indexes
+    CREATE INDEX IF NOT EXISTS idx_chat_events_conversation ON chat_events(conversation_id);
+    CREATE INDEX IF NOT EXISTS idx_chat_events_timestamp ON chat_events(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_chat_events_user ON chat_events(user_id);
+
+    -- Create audit_logs table
+    CREATE TABLE IF NOT EXISTS audit_logs (
+        id UUID PRIMARY KEY,
+        timestamp TIMESTAMP NOT NULL,
+        user_id VARCHAR(255) NOT NULL,
+        action VARCHAR(100) NOT NULL,
+        resource_type VARCHAR(100) NOT NULL,
+        resource_id VARCHAR(255),
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        status VARCHAR(50) NOT NULL,
+        details TEXT
+    );
+
+    -- Create indexes for audit_logs
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_status ON audit_logs(status);
+
+    -- Create function to automatically create monthly partitions
+    CREATE OR REPLACE FUNCTION create_monthly_partition()
+    RETURNS void AS \$\$
+    DECLARE
+        start_date DATE;
+        end_date DATE;
+        partition_name TEXT;
+    BEGIN
+        start_date := DATE_TRUNC('month', CURRENT_DATE);
+        end_date := start_date + INTERVAL '1 month';
+        partition_name := 'chat_events_' || TO_CHAR(start_date, 'YYYY_MM');
+        
+        -- Check if partition already exists
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_class WHERE relname = partition_name
+        ) THEN
+            EXECUTE format(
+                'CREATE TABLE %I PARTITION OF chat_events FOR VALUES FROM (%L) TO (%L)',
+                partition_name, start_date, end_date
+            );
+        END IF;
+    END;
+    \$\$ LANGUAGE plpgsql;
+
+    -- Create partitions for current and next month
+    SELECT create_monthly_partition();
+EOSQL
+
+echo "Database initialized successfully"

@@ -1,0 +1,39 @@
+# Multi-stage Dockerfile for Quarkus native mode
+FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:23.1-java21 AS build
+
+USER quarkus
+WORKDIR /code
+
+# Copy parent POM and module POMs
+COPY --chown=quarkus:quarkus pom.xml ./
+COPY --chown=quarkus:quarkus common/pom.xml ./common/
+COPY --chown=quarkus:quarkus chat-service/pom.xml ./chat-service/
+COPY --chown=quarkus:quarkus admin-service/pom.xml ./admin-service/
+
+# Download dependencies
+RUN mvn dependency:go-offline -B
+
+# Copy source code
+COPY --chown=quarkus:quarkus common/src ./common/src
+COPY --chown=quarkus:quarkus chat-service/src ./chat-service/src
+COPY --chown=quarkus:quarkus admin-service/src ./admin-service/src
+
+# Build native executable
+RUN mvn package -Pnative -DskipTests -B
+
+# Runtime stage
+FROM quay.io/quarkus/quarkus-micro-image:2.0
+
+WORKDIR /work/
+COPY --from=build /code/chat-service/target/*-runner /work/application
+
+# Set up permissions
+RUN chmod 775 /work /work/application \
+  && chown -R 1001 /work \
+  && chmod -R "g+rwX" /work \
+  && chown -R 1001:root /work
+
+EXPOSE 8080
+USER 1001
+
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]

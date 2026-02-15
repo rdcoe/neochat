@@ -1,0 +1,82 @@
+# Keycloak Helm Chart Configuration
+# Install with: helm install keycloak bitnami/keycloak -f keycloak-helm.yml -n neochat
+
+auth:
+  adminUser: admin
+  adminPassword: keycloak_admin_password
+
+production: true
+proxy: edge
+
+postgresql:
+  enabled: true
+  auth:
+    username: keycloak
+    password: keycloak_db_password
+    database: keycloak
+
+replicaCount: 2
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "500m"
+  limits:
+    memory: "1Gi"
+    cpu: "1000m"
+
+service:
+  type: ClusterIP
+  ports:
+    http: 80
+
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  hostname: keycloak.neochat.local
+  tls: true
+  extraTls:
+    - hosts:
+        - keycloak.neochat.local
+      secretName: keycloak-tls
+
+keycloakConfigCli:
+  enabled: true
+  configuration:
+    realm.json: |
+      {
+        "realm": "neochat",
+        "enabled": true,
+        "clients": [
+          {
+            "clientId": "chat-service",
+            "enabled": true,
+            "publicClient": false,
+            "protocol": "openid-connect",
+            "redirectUris": ["*"],
+            "webOrigins": ["*"],
+            "standardFlowEnabled": true,
+            "serviceAccountsEnabled": true,
+            "authorizationServicesEnabled": true
+          },
+          {
+            "clientId": "admin-service",
+            "enabled": true,
+            "publicClient": false,
+            "protocol": "openid-connect",
+            "redirectUris": ["*"],
+            "webOrigins": ["*"],
+            "standardFlowEnabled": true,
+            "serviceAccountsEnabled": true,
+            "authorizationServicesEnabled": true
+          }
+        ],
+        "roles": {
+          "realm": [
+            {"name": "admin"},
+            {"name": "overseer"},
+            {"name": "tutor"},
+            {"name": "student"}
+          ]
+        }
+      }
