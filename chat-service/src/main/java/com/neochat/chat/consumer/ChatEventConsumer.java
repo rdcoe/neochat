@@ -65,12 +65,12 @@ public class ChatEventConsumer {
                     .discardItems()
                     .invoke(() -> LOG.debugf("Event %s stored successfully", event.eventId()))
                     .onFailure().invoke(t -> LOG.error("Failed to store event", t))
-                    .replaceWith(message.ack())
+                    .chain(() -> Uni.createFrom().completionStage(message.ack()))
                     .subscribeAsCompletionStage();
 
         } catch (Exception e) {
             LOG.error("Failed to process event", e);
-            return message.nack(e).subscribeAsCompletionStage();
+            return message.nack(e);
         }
     }
 }

@@ -1,6 +1,5 @@
 package com.neochat.common.security.vault;
 
-import io.quarkus.vault.VaultKVSecretEngine;
 import io.smallrye.common.annotation.Identifier;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -35,12 +34,14 @@ public class VaultKeyProvider {
     @ConfigProperty(name = "vault.filesystem.public-key-path", defaultValue = "/keys/public.pem")
     String publicKeyPath;
 
-    @ConfigProperty(name = "vault.hashicorp.secret-path", defaultValue = "secret/neochat/keys")
-    String hashicorpSecretPath;
+    @ConfigProperty(name = "vault.hashicorp.url")
+    Optional<String> hashicorpVaultUrl;
 
-    @Inject
-    @Identifier("default")
-    Optional<VaultKVSecretEngine> vaultKVSecretEngine;
+    @ConfigProperty(name = "vault.hashicorp.token")
+    Optional<String> hashicorpVaultToken;
+
+    @ConfigProperty(name = "vault.hashicorp.secret-path", defaultValue = "secret/data/neochat/keys")
+    String hashicorpSecretPath;
 
     @Inject
     Optional<KeyVaultClient> keyVaultClient;
@@ -125,11 +126,12 @@ public class VaultKeyProvider {
 
     private String loadFromHashiCorpVault(String keyName) {
         LOG.infof("Loading key from HashiCorp Vault: %s/%s", hashicorpSecretPath, keyName);
-        if (vaultKVSecretEngine.isEmpty()) {
+        if (hashicorpVaultUrl.isEmpty() || hashicorpVaultToken.isEmpty()) {
             throw new IllegalStateException("HashiCorp Vault not configured");
         }
-        var secret = vaultKVSecretEngine.get().readSecret(hashicorpSecretPath);
-        return (String) secret.get(keyName);
+        // Note: In a real implementation, you would use HashiCorp Vault Java client
+        // For now, throw an exception indicating manual integration needed
+        throw new UnsupportedOperationException("HashiCorp Vault integration requires vault client library");
     }
 
     private String loadFromAzureKeyVault(String keyName) {

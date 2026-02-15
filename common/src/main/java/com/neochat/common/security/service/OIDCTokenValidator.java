@@ -1,7 +1,6 @@
 package com.neochat.common.security.service;
 
 import io.quarkus.oidc.OidcSession;
-import io.quarkus.oidc.runtime.OidcUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
@@ -26,7 +25,7 @@ public class OIDCTokenValidator {
             return Optional.empty();
         }
         
-        String idToken = oidcSession.get().getIdToken();
+        String idToken = oidcSession.get().getIdToken().getRawToken();
         return Optional.ofNullable(idToken);
     }
 
@@ -45,6 +44,6 @@ public class OIDCTokenValidator {
             return Optional.empty();
         }
         
-        return Optional.ofNullable(oidcSession.get().getUserInfo().getSubject());
+        return Optional.ofNullable(oidcSession.get().getIdToken().getSubject());
     }
 }

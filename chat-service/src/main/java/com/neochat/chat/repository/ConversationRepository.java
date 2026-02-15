@@ -51,7 +51,7 @@ public class ConversationRepository implements ReactivePanacheMongoRepository<Co
                     conversation.updatedAt = Instant.now();
                     return update(conversation).replaceWithVoid();
                 })
-                .onItem().ifNull().continueWithNull();
+                .onItem().ifNull().failWith(() -> new RuntimeException("Conversation not found"));
     }
 
     /**
