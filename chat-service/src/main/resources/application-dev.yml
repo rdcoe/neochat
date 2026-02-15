@@ -1,0 +1,44 @@
+# Development Configuration
+quarkus:
+  # Development mode settings
+  live-reload:
+    enabled: true
+
+  # MongoDB
+  mongodb:
+    connection-string: mongodb://localhost:27017
+    database: neochat_dev
+
+  # PostgreSQL
+  datasource:
+    username: neochat_dev
+    password: dev_password
+    reactive:
+      url: postgresql://localhost:5432/neochat_dev
+
+  # Kafka
+  kafka:
+    bootstrap-servers: localhost:9092
+
+  # OIDC
+  oidc:
+    auth-server-url: http://localhost:8180/realms/neochat
+    tls:
+      verification: none
+
+  # Vault
+  vault:
+    url: http://localhost:8200
+    authentication:
+      client-token: dev-token
+
+# Development vault settings
+vault:
+  provider: filesystem
+  filesystem:
+    private-key-path: /tmp/keys/private.pem
+    public-key-path: /tmp/keys/public.pem
+
+# Debug logging
+quarkus.log.level: DEBUG
+quarkus.log.console.format: "%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n"
