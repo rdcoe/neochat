@@ -1,0 +1,67 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+      
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
+      
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Build and push Docker images
+        run: |
+          # Chat service
+          docker build -f docker/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/chat-service:latest .
+          docker tag ${{ secrets.DOCKER_USERNAME }}/chat-service:latest ${{ secrets.DOCKER_USERNAME }}/chat-service:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/chat-service:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/chat-service:${{ github.sha }}
+          
+          # Admin service
+          docker build -f docker/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/admin-service:latest .
+          docker tag ${{ secrets.DOCKER_USERNAME }}/admin-service:latest ${{ secrets.DOCKER_USERNAME }}/admin-service:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/admin-service:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/admin-service:${{ github.sha }}
+      
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+      
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig
+          export KUBECONFIG=kubeconfig
+      
+      - name: Deploy to Kubernetes
+        run: |
+          export KUBECONFIG=kubeconfig
+          kubectl apply -k k8s/
+          kubectl rollout restart deployment/chat-service -n neochat
+          kubectl rollout restart deployment/admin-service -n neochat
+          kubectl rollout status deployment/chat-service -n neochat
+          kubectl rollout status deployment/admin-service -n neochat
+      
+      - name: Cleanup
+        if: always()
+        run: rm -f kubeconfig

@@ -1,0 +1,174 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-service
+  namespace: neochat
+  labels:
+    app: chat-service
+    component: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: chat-service
+  template:
+    metadata:
+      labels:
+        app: chat-service
+        component: backend
+    spec:
+      containers:
+        - name: chat-service
+          image: neochat/chat-service:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: MONGODB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: neochat-secrets
+                  key: mongodb-url
+            - name: POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: neochat-secrets
+                  key: postgres-url
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: neochat-secrets
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: neochat-secrets
+                  key: postgres-password
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "neochat-cluster-kafka-bootstrap:9092"
+            - name: OIDC_AUTH_SERVER_URL
+              value: "http://keycloak/realms/neochat"
+            - name: OIDC_CLIENT_ID
+              value: "chat-service"
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: neochat-secrets
+                  key: oidc-chat-secret
+            - name: VAULT_URL
+              value: "http://vault:8200"
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: neochat-secrets
+                  key: vault-token
+            - name: VAULT_PROVIDER
+              value: "hashicorp"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-service
+  namespace: neochat
+  labels:
+    app: admin-service
+    component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: admin-service
+  template:
+    metadata:
+      labels:
+        app: admin-service
+        component: backend
+    spec:
+      containers:
+        - name: admin-service
+          image: neochat/admin-service:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8081
+              protocol: TCP
+          env:
+            - name: MONGODB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: neochat-secrets
+                  key: mongodb-url
+            - name: POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: neochat-secrets
+                  key: postgres-url
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: neochat-secrets
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: neochat-secrets
+                  key: postgres-password
+            - name: OIDC_AUTH_SERVER_URL
+              value: "http://keycloak/realms/neochat"
+            - name: OIDC_CLIENT_ID
+              value: "admin-service"
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: neochat-secrets
+                  key: oidc-admin-secret
+            - name: VAULT_URL
+              value: "http://vault:8200"
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: neochat-secrets
+                  key: vault-token
+            - name: VAULT_PROVIDER
+              value: "hashicorp"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: 8081
+            initialDelaySeconds: 10
+            periodSeconds: 5

@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: neochat
+
+resources:
+  - namespace.yml
+  - neochat-backend-deployment.yml
+  - neochat-backend-service.yml
+  - ingress.yml
+
+secretGenerator:
+  - name: neochat-secrets
+    literals:
+      - mongodb-url=mongodb://neochat:neochat_mongo_password@mongodb:27017/neochat
+      - postgres-url=postgresql://postgresql:5432/neochat
+      - postgres-user=neochat
+      - postgres-password=neochat_prod_password
+      - oidc-chat-secret=chat_service_secret
+      - oidc-admin-secret=admin_service_secret
+      - vault-token=vault_root_token
+
+configMapGenerator:
+  - name: neochat-config
+    literals:
+      - KAFKA_BOOTSTRAP_SERVERS=neochat-cluster-kafka-bootstrap:9092
+      - OIDC_AUTH_SERVER_URL=http://keycloak/realms/neochat
+      - VAULT_URL=http://vault:8200
+
+commonLabels:
+  app.kubernetes.io/name: neochat
+  app.kubernetes.io/instance: production
+  app.kubernetes.io/version: "1.0.0"
+  app.kubernetes.io/component: backend
+  app.kubernetes.io/managed-by: kustomize

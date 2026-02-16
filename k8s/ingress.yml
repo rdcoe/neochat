@@ -1,0 +1,55 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: neochat-ingress
+  namespace: neochat
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/websocket-services: "chat-service"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - neochat.example.com
+      secretName: neochat-tls
+  rules:
+    - host: neochat.example.com
+      http:
+        paths:
+          - path: /api/chat
+            pathType: Prefix
+            backend:
+              service:
+                name: chat-service
+                port:
+                  number: 8080
+          - path: /api/admin
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-service
+                port:
+                  number: 8081
+          - path: /api/audit
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-service
+                port:
+                  number: 8081
+          - path: /q/health
+            pathType: Prefix
+            backend:
+              service:
+                name: chat-service
+                port:
+                  number: 8080
+          - path: /q/metrics
+            pathType: Prefix
+            backend:
+              service:
+                name: chat-service
+                port:
+                  number: 8080

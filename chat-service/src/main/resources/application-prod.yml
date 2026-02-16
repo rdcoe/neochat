@@ -1,0 +1,40 @@
+# Production Configuration
+quarkus:
+  # MongoDB
+  mongodb:
+    connection-string: ${MONGODB_URL}
+    database: neochat
+
+  # PostgreSQL
+  datasource:
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    reactive:
+      url: ${POSTGRES_URL}
+
+  # Kafka
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+
+  # OIDC
+  oidc:
+    auth-server-url: ${OIDC_AUTH_SERVER_URL}
+    client-id: ${OIDC_CLIENT_ID}
+    credentials:
+      secret: ${OIDC_CLIENT_SECRET}
+    tls:
+      verification: required
+
+  # Vault
+  vault:
+    url: ${VAULT_URL}
+    authentication:
+      client-token: ${VAULT_TOKEN}
+
+# Production vault settings
+vault:
+  provider: ${VAULT_PROVIDER:hashicorp}
+
+# Production logging
+quarkus.log.level: INFO
+quarkus.log.console.json: true

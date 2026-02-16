@@ -1,0 +1,88 @@
+# Application Configuration
+quarkus:
+  application:
+    name: admin-service
+
+  # HTTP Configuration
+  http:
+    port: 8081
+    host: 0.0.0.0
+
+  # MongoDB Configuration
+  mongodb:
+    connection-string: ${MONGODB_URL:mongodb://localhost:27017}
+    database: neochat
+
+  # PostgreSQL Configuration
+  datasource:
+    db-kind: postgresql
+    username: ${POSTGRES_USER:neochat}
+    password: ${POSTGRES_PASSWORD:neochat}
+    reactive:
+      url: ${POSTGRES_URL:postgresql://localhost:5432/neochat}
+
+  # Hibernate
+  hibernate-orm:
+    database:
+      generation: update
+
+  # OIDC Configuration
+  oidc:
+    auth-server-url: ${OIDC_AUTH_SERVER_URL:http://localhost:8180/realms/neochat}
+    client-id: ${OIDC_CLIENT_ID:admin-service}
+    credentials:
+      secret: ${OIDC_CLIENT_SECRET:secret}
+    tls:
+      verification: ${OIDC_TLS_VERIFICATION:none}
+
+  # JWT Configuration
+  smallrye-jwt:
+    enabled: true
+
+  # Vault Configuration
+  vault:
+    url: ${VAULT_URL:http://localhost:8200}
+    authentication:
+      client-token: ${VAULT_TOKEN:root}
+    kv-secret-engine-version: 2
+
+  # Health
+  health:
+    openapi:
+      included: true
+
+  # Metrics
+  micrometer:
+    export:
+      prometheus:
+        enabled: true
+
+  # Kubernetes
+  kubernetes:
+    deployment-target: kubernetes
+
+  # Container Image
+  container-image:
+    registry: ${CONTAINER_REGISTRY:docker.io}
+    group: ${CONTAINER_GROUP:neochat}
+    name: admin-service
+    tag: ${CONTAINER_TAG:latest}
+
+# Custom Configuration
+auth:
+  jwt:
+    enabled: ${AUTH_JWT_ENABLED:true}
+
+vault:
+  provider: ${VAULT_PROVIDER:filesystem}
+  filesystem:
+    private-key-path: ${VAULT_FS_PRIVATE_KEY:/keys/private.pem}
+    public-key-path: ${VAULT_FS_PUBLIC_KEY:/keys/public.pem}
+  hashicorp:
+    secret-path: ${VAULT_HC_SECRET_PATH:secret/neochat/keys}
+  azure:
+    key-vault-url: ${VAULT_AZURE_URL:}
+
+# Logging
+quarkus.log.level: INFO
+quarkus.log.category."com.neochat".level: DEBUG
