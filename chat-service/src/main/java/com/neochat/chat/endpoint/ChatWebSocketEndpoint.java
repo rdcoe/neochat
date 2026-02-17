@@ -45,7 +45,7 @@ public class ChatWebSocketEndpoint {
         Map<String, String> params = session.getRequestParameterMap().entrySet().stream()
                 .collect(java.util.stream.Collectors.toMap(
                     Map.Entry::getKey,
-                    e -> e.getValue().isEmpty() ? "" : e.getValue().get(0)
+                    e -> e.getValue().isEmpty() ? "" : e.getValue().getFirst()
                 ));
 
         String authHeader = params.get("authorization");

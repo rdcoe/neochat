@@ -8,7 +8,7 @@ import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -121,7 +121,7 @@ public class VaultKeyProvider {
 
     private String loadFromFilesystem(String path) throws IOException {
         LOG.infof("Loading key from filesystem: %s", path);
-        return Files.readString(Paths.get(path));
+        return Files.readString(Path.of(path));
     }
 
     private String loadFromHashiCorpVault(String keyName) {
