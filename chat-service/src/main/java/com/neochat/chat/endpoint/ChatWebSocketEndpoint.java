@@ -1,31 +1,35 @@
 package com.neochat.chat.endpoint;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.jboss.logging.Logger;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neochat.chat.model.ChatMessage;
 import com.neochat.chat.service.ChatEventService;
 import com.neochat.common.security.model.IdentityTokenClaims;
 import com.neochat.common.security.service.TokenValidator;
-import io.smallrye.jwt.auth.principal.ParseException;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import jakarta.websocket.*;
-import jakarta.websocket.server.PathParam;
-import jakarta.websocket.server.ServerEndpoint;
-import org.jboss.logging.Logger;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import io.quarkus.websockets.next.OnClose;
+import io.quarkus.websockets.next.OnError;
+import io.quarkus.websockets.next.OnOpen;
+import io.quarkus.websockets.next.OnTextMessage;
+import io.quarkus.websockets.next.WebSocket;
+import io.quarkus.websockets.next.WebSocketConnection;
+import io.smallrye.jwt.auth.principal.ParseException;
+import io.smallrye.mutiny.Uni;
+import jakarta.inject.Inject;
 
 /**
  * Stateless WebSocket endpoint for chat
  * Authentication via JWT in connection header
  * Authorization per message via identity_token
  */
-@ServerEndpoint("/api/chat/{conversationId}")
-@ApplicationScoped
+@WebSocket(path = "/api/chat/{conversationId}")
 public class ChatWebSocketEndpoint {
     private static final Logger LOG = Logger.getLogger(ChatWebSocketEndpoint.class);
+    private static final String CONVERSATION_ID = "conversationId";
 
     @Inject
     TokenValidator tokenValidator;
@@ -36,142 +40,149 @@ public class ChatWebSocketEndpoint {
     @Inject
     ObjectMapper objectMapper;
 
-    // Track active sessions per conversation (for broadcasting)
-    private final Map<String, Map<String, Session>> conversationSessions = new ConcurrentHashMap<>();
+    // Track active connections per conversation (for broadcasting)
+    private final Map<String, Map<String, WebSocketConnection>> conversationConnections = new ConcurrentHashMap<>();
 
     @OnOpen
-    public void onOpen(Session session, @PathParam("conversationId") String conversationId) {
-        // Validate JWT from Authorization header
-        Map<String, String> params = session.getRequestParameterMap().entrySet().stream()
-                .collect(java.util.stream.Collectors.toMap(
-                    Map.Entry::getKey,
-                    e -> e.getValue().isEmpty() ? "" : e.getValue().getFirst()
-                ));
+    public Uni<Void> onOpen(WebSocketConnection connection) {
+        String conversationId = connection.pathParam(CONVERSATION_ID);
 
-        String authHeader = params.get("authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            LOG.warn("WebSocket connection attempt without valid authorization");
-            try {
-                session.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "Missing authorization"));
-            } catch (IOException e) {
-                LOG.error("Failed to close session", e);
+        // Validate JWT from query param (WebSocket clients typically pass token as
+        // query param)
+        String token = connection.handshakeRequest().query() != null
+                ? extractTokenFromQuery(connection.handshakeRequest().query())
+                : null;
+
+        if (token == null) {
+            String authHeader = connection.handshakeRequest().header("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7);
             }
-            return;
         }
 
-        String token = authHeader.substring(7); // Remove "Bearer "
+        if (token == null) {
+            LOG.warn("WebSocket connection attempt without valid authorization");
+            return connection.close();
+        }
+
         try {
             tokenValidator.validateToken(token);
-            
-            // Store session
-            conversationSessions.computeIfAbsent(conversationId, k -> new ConcurrentHashMap<>())
-                    .put(session.getId(), session);
-            
-            LOG.infof("WebSocket connection opened for conversation %s, session %s", 
-                     conversationId, session.getId());
-                     
+
+            // Store connection
+            conversationConnections.computeIfAbsent(conversationId, k -> new ConcurrentHashMap<>())
+                    .put(connection.id(), connection);
+
+            LOG.infof("WebSocket connection opened for conversation %s, connection %s",
+                    conversationId, connection.id());
+            return Uni.createFrom().voidItem();
+
         } catch (ParseException e) {
             LOG.error("Invalid JWT token", e);
-            try {
-                session.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "Invalid token"));
-            } catch (IOException ex) {
-                LOG.error("Failed to close session", ex);
-            }
+            return connection.close();
         }
     }
 
-    @OnMessage
-    public void onMessage(String message, Session session, @PathParam("conversationId") String conversationId) {
+    @OnTextMessage
+    public Uni<Void> onMessage(String message, WebSocketConnection connection) {
+        String conversationId = connection.pathParam(CONVERSATION_ID);
         try {
             ChatMessage chatMessage = objectMapper.readValue(message, ChatMessage.class);
 
             // Validate identity token from message
             String identityToken = chatMessage.getIdentityToken();
             if (identityToken == null) {
-                sendError(session, "Missing identity_token in message");
-                return;
+                return sendError(connection, "Missing identity_token in message");
             }
 
             IdentityTokenClaims claims = tokenValidator.extractIdentityClaims(identityToken);
 
             // Verify user can access this conversation
-            chatEventService.validateAccess(claims.getSubject(), conversationId)
-                    .subscribe().with(
-                        canAccess -> {
-                            if (!canAccess) {
-                                sendError(session, "User does not have access to this conversation");
-                                return;
-                            }
+            return chatEventService.validateAccess(claims.getSubject(), conversationId)
+                    .flatMap(canAccess -> {
+                        if (!canAccess) {
+                            return sendError(connection, "User does not have access to this conversation");
+                        }
 
-                            // Post message
-                            chatEventService.postMessage(
+                        // Post message
+                        return chatEventService.postMessage(
                                 conversationId,
                                 claims.getSubject(),
                                 chatMessage.getContent(),
-                                chatMessage.getMessageType()
-                            ).subscribe().with(
-                                success -> {
-                                    LOG.debugf("Message posted successfully to conversation %s", conversationId);
-                                    // Broadcasting handled by Kafka consumer
-                                },
-                                error -> {
+                                chatMessage.getMessageType())
+                                .invoke(() -> LOG.debugf("Message posted successfully to conversation %s",
+                                        conversationId))
+                                .onFailure().recoverWithUni(error -> {
                                     LOG.error("Failed to post message", error);
-                                    sendError(session, "Failed to post message: " + error.getMessage());
-                                }
-                            );
-                        },
-                        error -> {
-                            LOG.error("Failed to validate access", error);
-                            sendError(session, "Failed to validate access");
-                        }
-                    );
+                                    return sendError(connection, "Failed to post message: " + error.getMessage());
+                                });
+                    })
+                    .onFailure().recoverWithUni(error -> {
+                        LOG.error("Failed to validate access", error);
+                        return sendError(connection, "Failed to validate access");
+                    });
 
         } catch (Exception e) {
             LOG.error("Failed to process message", e);
-            sendError(session, "Invalid message format");
+            return sendError(connection, "Invalid message format");
         }
     }
 
     @OnClose
-    public void onClose(Session session, @PathParam("conversationId") String conversationId) {
-        Map<String, Session> sessions = conversationSessions.get(conversationId);
-        if (sessions != null) {
-            sessions.remove(session.getId());
-            if (sessions.isEmpty()) {
-                conversationSessions.remove(conversationId);
+    public void onClose(WebSocketConnection connection) {
+        String conversationId = connection.pathParam(CONVERSATION_ID);
+        Map<String, WebSocketConnection> connections = conversationConnections.get(conversationId);
+        if (connections != null) {
+            connections.remove(connection.id());
+            if (connections.isEmpty()) {
+                conversationConnections.remove(conversationId);
             }
         }
-        LOG.infof("WebSocket connection closed for conversation %s, session %s", 
-                 conversationId, session.getId());
+        LOG.infof("WebSocket connection closed for conversation %s, connection %s",
+                conversationId, connection.id());
     }
 
     @OnError
-    public void onError(Session session, Throwable throwable, @PathParam("conversationId") String conversationId) {
-        LOG.errorf(throwable, "WebSocket error for conversation %s, session %s", 
-                  conversationId, session.getId());
+    public void onError(WebSocketConnection connection, Throwable throwable) {
+        String conversationId = connection.pathParam(CONVERSATION_ID);
+        LOG.errorf(throwable, "WebSocket error for conversation %s, connection %s",
+                conversationId, connection.id());
     }
 
     /**
-     * Broadcast message to all sessions in a conversation
+     * Broadcast message to all connections in a conversation
      */
-    public void broadcast(String conversationId, String message) {
-        Map<String, Session> sessions = conversationSessions.get(conversationId);
-        if (sessions != null) {
-            sessions.values().forEach(session -> {
-                if (session.isOpen()) {
-                    session.getAsyncRemote().sendText(message);
-                }
-            });
+    public Uni<Void> broadcast(String conversationId, String message) {
+        Map<String, WebSocketConnection> connections = conversationConnections.get(conversationId);
+        if (connections != null) {
+            return Uni.join().all(
+                    connections.values().stream()
+                            .filter(WebSocketConnection::isOpen)
+                            .map(conn -> conn.sendText(message))
+                            .toList())
+                    .andFailFast().replaceWithVoid();
+        }
+        return Uni.createFrom().voidItem();
+    }
+
+    private Uni<Void> sendError(WebSocketConnection connection, String error) {
+        try {
+            String errorJson = objectMapper.writeValueAsString(Map.of("error", error));
+            return connection.sendText(errorJson);
+        } catch (Exception e) {
+            LOG.error("Failed to send error message", e);
+            return Uni.createFrom().voidItem();
         }
     }
 
-    private void sendError(Session session, String error) {
-        try {
-            session.getBasicRemote().sendText(
-                objectMapper.writeValueAsString(Map.of("error", error))
-            );
-        } catch (Exception e) {
-            LOG.error("Failed to send error message", e);
+    private String extractTokenFromQuery(String query) {
+        if (query == null)
+            return null;
+        for (String param : query.split("&")) {
+            String[] pair = param.split("=", 2);
+            if (pair.length == 2 && "token".equals(pair[0])) {
+                return pair[1];
+            }
         }
+        return null;
     }
 }

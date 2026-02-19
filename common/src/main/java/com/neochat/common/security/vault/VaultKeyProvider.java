@@ -1,11 +1,5 @@
 package com.neochat.common.security.vault;
 
-import io.smallrye.common.annotation.Identifier;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,8 +11,16 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Optional;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+
 /**
- * Provides RSA key pairs from various sources (filesystem, HashiCorp Vault, Azure Key Vault)
+ * Provides RSA key pairs from various sources (filesystem, HashiCorp Vault,
+ * Azure Key Vault)
  * Keys are cached in memory for performance
  */
 @ApplicationScoped
@@ -44,7 +46,7 @@ public class VaultKeyProvider {
     String hashicorpSecretPath;
 
     @Inject
-    Optional<KeyVaultClient> keyVaultClient;
+    Instance<KeyVaultClient> keyVaultClient;
 
     private PrivateKey cachedPrivateKey;
     private PublicKey cachedPublicKey;
@@ -136,7 +138,7 @@ public class VaultKeyProvider {
 
     private String loadFromAzureKeyVault(String keyName) {
         LOG.infof("Loading key from Azure Key Vault: %s", keyName);
-        if (keyVaultClient.isEmpty()) {
+        if (!keyVaultClient.isResolvable()) {
             throw new IllegalStateException("Azure Key Vault not configured");
         }
         return keyVaultClient.get().getSecret(keyName);

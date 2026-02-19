@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -24,48 +24,16 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Quarkus Core -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
-        </dependency>
-
         <!-- WebSocket -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-websockets</artifactId>
+            <artifactId>quarkus-websockets-next</artifactId>
         </dependency>
 
-        <!-- Database -->
+        <!-- Kafka - Reactive Messaging (includes kafka-client) -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-reactive-panache</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-reactive-pg-client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-mongodb-panache</artifactId>
-        </dependency>
-
-        <!-- Kafka -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kafka-client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kafka-streams</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+            <artifactId>quarkus-messaging-kafka</artifactId>
         </dependency>
 
         <!-- Monitoring -->

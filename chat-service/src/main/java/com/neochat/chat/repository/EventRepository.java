@@ -48,7 +48,7 @@ public class EventRepository {
                     mongoEventStore.getEvents(conversationId, thirtyDaysAgo, to),
                     postgresEventStore.getEvents(conversationId, from, thirtyDaysAgo)
                 )
-                .combinedWith((mongoEvents, postgresEvents) -> {
+                .with((mongoEvents, postgresEvents) -> {
                     List<EventStore.ChatEventRecord> allEvents = new ArrayList<>();
                     allEvents.addAll(postgresEvents);
                     allEvents.addAll(mongoEvents);

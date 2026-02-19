@@ -1,11 +1,13 @@
 package com.neochat.common.security.service;
 
-import io.quarkus.oidc.OidcSession;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+import java.util.Optional;
+
 import org.jboss.logging.Logger;
 
-import java.util.Optional;
+import io.quarkus.oidc.OidcSession;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 
 /**
  * Validates and manages OIDC tokens
@@ -15,16 +17,16 @@ public class OIDCTokenValidator {
     private static final Logger LOG = Logger.getLogger(OIDCTokenValidator.class);
 
     @Inject
-    Optional<OidcSession> oidcSession;
+    Instance<OidcSession> oidcSession;
 
     /**
      * Get the current OIDC ID token
      */
     public Optional<String> getIdToken() {
-        if (oidcSession.isEmpty()) {
+        if (!oidcSession.isResolvable()) {
             return Optional.empty();
         }
-        
+
         String idToken = oidcSession.get().getIdToken().getRawToken();
         return Optional.ofNullable(idToken);
     }
@@ -33,17 +35,17 @@ public class OIDCTokenValidator {
      * Validate if OIDC session is active
      */
     public boolean isSessionActive() {
-        return oidcSession.isPresent();
+        return oidcSession.isResolvable();
     }
 
     /**
      * Get the subject from OIDC session
      */
     public Optional<String> getSubject() {
-        if (oidcSession.isEmpty()) {
+        if (!oidcSession.isResolvable()) {
             return Optional.empty();
         }
-        
+
         return Optional.ofNullable(oidcSession.get().getIdToken().getSubject());
     }
 }
