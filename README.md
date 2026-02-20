@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD022 MD031 MD032 MD034 MD040 MD060 -->
+
 # NeoChat Backend
 
 A secure, auditable tutoring platform that connects students with tutors through real-time chat.
