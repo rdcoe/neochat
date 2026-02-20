@@ -7,14 +7,14 @@ quarkus:
   # MongoDB
   mongodb:
     connection-string: mongodb://localhost:27017
-    database: neochat_dev
+    database: neochat_chat
 
   # PostgreSQL
   datasource:
     username: neochat_dev
     password: dev_password
     reactive:
-      url: postgresql://localhost:5432/neochat_dev
+      url: postgresql://localhost:5432/neochat_app
 
   # Kafka
   kafka:

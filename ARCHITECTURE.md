@@ -4,6 +4,8 @@
 
 NeoChat is a secure, auditable tutoring platform that connects students with tutors through real-time chat. The backend is built with Quarkus, using a microservices architecture with event-driven communication.
 
+For the authoritative data boundary and schema blueprint, see [DATA_MODEL.md](DATA_MODEL.md).
+
 ## System Architecture
 
 ### High-Level Architecture

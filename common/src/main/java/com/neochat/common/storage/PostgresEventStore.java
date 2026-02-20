@@ -67,7 +67,7 @@ public class PostgresEventStore implements EventStore {
      * PostgreSQL entity for storing chat events
      */
     @Entity
-    @Table(name = "chat_events")
+    @Table(name = "chat_events", schema = "chat")
     public static class PostgresEventEntity extends PanacheEntityBase {
         
         @Id
