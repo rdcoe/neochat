@@ -11,19 +11,20 @@ quarkus:
   # MongoDB Configuration
   mongodb:
     connection-string: ${MONGODB_URL:mongodb://localhost:27017}
-    database: neochat
+    database: ${MONGODB_DATABASE:neochat_admin}
 
   # PostgreSQL Configuration
   datasource:
     db-kind: postgresql
-    username: ${POSTGRES_USER:neochat}
-    password: ${POSTGRES_PASSWORD:neochat}
+    username: ${POSTGRES_USER:neochat_dev}
+    password: ${POSTGRES_PASSWORD:dev_password}
     reactive:
-      url: ${POSTGRES_URL:postgresql://localhost:5432/neochat}
+      url: ${POSTGRES_URL:postgresql://localhost:5432/neochat_app}
 
   # Hibernate
   hibernate-orm:
     database:
+      default-schema: admin
       generation: update
 
   # OIDC Configuration

@@ -8,7 +8,10 @@ services:
     environment:
       POSTGRES_USER: neochat_dev
       POSTGRES_PASSWORD: dev_password
-      POSTGRES_DB: neochat_dev
+      POSTGRES_DB: neochat_app
+      KEYCLOAK_DB: keycloak
+      KEYCLOAK_DB_USER: keycloak_dev
+      KEYCLOAK_DB_PASSWORD: keycloak_dev_password
     ports:
       - "5432:5432"
     volumes:
@@ -83,8 +86,8 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
-      KC_DB_USERNAME: neochat_dev
-      KC_DB_PASSWORD: dev_password
+      KC_DB_USERNAME: keycloak_dev
+      KC_DB_PASSWORD: keycloak_dev_password
     ports:
       - "8180:8080"
     depends_on:

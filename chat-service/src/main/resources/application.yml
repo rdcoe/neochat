@@ -15,19 +15,20 @@ quarkus:
   # MongoDB Configuration
   mongodb:
     connection-string: ${MONGODB_URL:mongodb://localhost:27017}
-    database: neochat
+    database: ${MONGODB_DATABASE:neochat_chat}
 
   # PostgreSQL Configuration
   datasource:
     db-kind: postgresql
-    username: ${POSTGRES_USER:neochat}
-    password: ${POSTGRES_PASSWORD:neochat}
+    username: ${POSTGRES_USER:neochat_dev}
+    password: ${POSTGRES_PASSWORD:dev_password}
     reactive:
-      url: ${POSTGRES_URL:postgresql://localhost:5432/neochat}
+      url: ${POSTGRES_URL:postgresql://localhost:5432/neochat_app}
 
   # Hibernate
   hibernate-orm:
     database:
+      default-schema: chat
       generation: update
 
   # Kafka Configuration
@@ -39,12 +40,12 @@ quarkus:
     kafka:
       chat-events-out:
         connector: smallrye-kafka
-        topic: chat-events
+        topic: neochat.chat.events
         key.serializer: org.apache.kafka.common.serialization.StringSerializer
         value.serializer: org.apache.kafka.common.serialization.StringSerializer
       chat-events-in:
         connector: smallrye-kafka
-        topic: chat-events
+        topic: neochat.chat.events
         key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
         value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
         group.id: chat-service-consumer
