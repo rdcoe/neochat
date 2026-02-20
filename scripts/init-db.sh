@@ -3,7 +3,7 @@
 
 set -e
 
-POSTGRES_HOST=${POSTGRES_HOST:-localhost}
+POSTGRES_HOST=${POSTGRES_HOST:-/var/run/postgresql}
 POSTGRES_PORT=${POSTGRES_PORT:-5432}
 POSTGRES_USER=${POSTGRES_USER:-neochat}
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-neochat}
@@ -17,7 +17,7 @@ echo "Initializing PostgreSQL database: $POSTGRES_DB"
 # Export password for psql
 export PGPASSWORD=$POSTGRES_PASSWORD
 
-psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d postgres <<-EOSQL
+psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d postgres <<-EOSQL
     DO
     \$\$
     BEGIN
@@ -32,17 +32,23 @@ psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d postgres <<-
     \gexec
 
     GRANT ALL PRIVILEGES ON DATABASE "${KEYCLOAK_DB}" TO "${KEYCLOAK_DB_USER}";
+    ALTER DATABASE "${KEYCLOAK_DB}" OWNER TO "${KEYCLOAK_DB_USER}";
+EOSQL
+
+psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$KEYCLOAK_DB" <<-EOSQL
+    GRANT USAGE, CREATE ON SCHEMA public TO "${KEYCLOAK_DB_USER}";
+    ALTER SCHEMA public OWNER TO "${KEYCLOAK_DB_USER}";
 EOSQL
 
 # Create NeoChat app schemas and tables
-psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<-EOSQL
+psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<-EOSQL
     -- Create app schemas
     CREATE SCHEMA IF NOT EXISTS chat;
     CREATE SCHEMA IF NOT EXISTS admin;
 
     -- Create chat_events table with range partitioning on timestamp
     CREATE TABLE IF NOT EXISTS chat.chat_events (
-        id UUID PRIMARY KEY,
+        id UUID NOT NULL,
         conversation_id VARCHAR(255) NOT NULL,
         event_type VARCHAR(50) NOT NULL,
         payload TEXT,
@@ -57,6 +63,7 @@ psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_D
     CREATE INDEX IF NOT EXISTS idx_chat_events_conversation ON chat.chat_events(conversation_id);
     CREATE INDEX IF NOT EXISTS idx_chat_events_timestamp ON chat.chat_events(timestamp);
     CREATE INDEX IF NOT EXISTS idx_chat_events_user ON chat.chat_events(user_id);
+    CREATE INDEX IF NOT EXISTS idx_chat_events_id ON chat.chat_events(id);
 
     -- Create audit_logs table
     CREATE TABLE IF NOT EXISTS admin.audit_logs (
