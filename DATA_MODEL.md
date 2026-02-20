@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD022 MD031 MD032 -->
+
 # NeoChat Data Model Blueprint
 
 ## 1) Scope and Decision

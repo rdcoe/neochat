@@ -10,7 +10,7 @@ For the authoritative data boundary and schema blueprint, see [DATA_MODEL.md](DA
 
 ### High-Level Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                        Ingress Layer                         │
 │                     (NGINX/Kubernetes)                       │
@@ -39,6 +39,7 @@ For the authoritative data boundary and schema blueprint, see [DATA_MODEL.md](DA
 ### Components
 
 #### 1. Chat Service
+
 - **WebSocket Endpoint**: Stateless real-time communication
 - **Kafka Producer**: Publishes chat events to Kafka topics
 - **Kafka Consumer**: Consumes events and persists to storage
@@ -46,12 +47,14 @@ For the authoritative data boundary and schema blueprint, see [DATA_MODEL.md](DA
 - **Conversation Repository**: Manages conversation metadata
 
 #### 2. Admin Service
+
 - **Admin REST API**: User management operations
 - **Audit REST API**: Audit log queries
 - **User Management Service**: CRUD operations for users
 - **Audit Service**: Comprehensive audit logging
 
 #### 3. Common Module
+
 - **Security Filters**: JWT authorization and identity token authentication
 - **Token Services**: JWT signing and validation
 - **Vault Integration**: Key management (filesystem, HashiCorp, Azure)
@@ -61,7 +64,7 @@ For the authoritative data boundary and schema blueprint, see [DATA_MODEL.md](DA
 
 ### Authentication & Authorization Flow
 
-```
+```text
 1. Client connects with Bearer token (OIDC/Keycloak)
 2. JWTAuthZFilter validates token (Priority: AUTHENTICATION)
 3. IdentityTokenAuthNFilter validates identity (Priority: AUTHENTICATION + 1)
@@ -99,6 +102,7 @@ For the authoritative data boundary and schema blueprint, see [DATA_MODEL.md](DA
 ### Storage Strategy
 
 #### Hot Storage (MongoDB)
+
 - **Purpose**: Recent events (last 30 days)
 - **TTL**: Automatic expiration after 30 days
 - **Collections**:
@@ -107,6 +111,7 @@ For the authoritative data boundary and schema blueprint, see [DATA_MODEL.md](DA
   - `users`: User profiles
 
 #### Cold Storage (PostgreSQL)
+
 - **Purpose**: Historical events (permanent)
 - **Partitioning**: Monthly partitions by timestamp
 - **Tables**:
@@ -115,7 +120,7 @@ For the authoritative data boundary and schema blueprint, see [DATA_MODEL.md](DA
 
 ### Event Flow
 
-```
+```text
 1. WebSocket message received → ChatEventService validates
 2. ChatEventService → KafkaEventProducer publishes event
 3. Kafka topic: chat-events (partitioned by conversation_id)
@@ -129,6 +134,7 @@ For the authoritative data boundary and schema blueprint, see [DATA_MODEL.md](DA
 ### Chat Message Lifecycle
 
 1. **Client Sends Message**
+
    ```json
    {
      "conversation_id": "uuid",
@@ -139,17 +145,20 @@ For the authoritative data boundary and schema blueprint, see [DATA_MODEL.md](DA
    ```
 
 2. **Server Processing**
+
    - Validate identity token
    - Check conversation access
    - Create immutable ChatEvent
    - Publish to Kafka with conversation_id as partition key
 
 3. **Event Persistence**
+
    - Consumer writes to MongoDB (TTL 30 days)
    - Consumer writes to PostgreSQL (permanent)
    - Broadcast to WebSocket subscribers
 
 4. **Client Receives**
+
    ```json
    {
      "event_id": "uuid",
@@ -211,21 +220,25 @@ For the authoritative data boundary and schema blueprint, see [DATA_MODEL.md](DA
 ### Local Development
 
 1. **Start infrastructure**:
+
    ```bash
    docker-compose -f docker-compose.dev.yml up -d
    ```
 
 2. **Generate keys**:
+
    ```bash
    ./scripts/generate-keys.sh
    ```
 
 3. **Initialize database**:
+
    ```bash
    ./scripts/init-db.sh
    ```
 
 4. **Run services**:
+
    ```bash
    mvn quarkus:dev -pl chat-service
    mvn quarkus:dev -pl admin-service
@@ -238,6 +251,7 @@ tilt up
 ```
 
 Tilt provides:
+
 - Live code reloading
 - Resource dashboard
 - Log streaming
@@ -246,6 +260,7 @@ Tilt provides:
 ## CI/CD Pipeline
 
 ### Build Pipeline
+
 1. Checkout code
 2. Set up JDK 21
 3. Build with Maven
@@ -254,6 +269,7 @@ Tilt provides:
 6. Upload artifacts
 
 ### Deploy Pipeline
+
 1. Build production images
 2. Push to Docker registry
 3. Update Kubernetes manifests
@@ -265,6 +281,7 @@ Tilt provides:
 ### Environment Variables
 
 #### Chat Service
+
 - `MONGODB_URL`: MongoDB connection string
 - `POSTGRES_URL`: PostgreSQL connection string
 - `KAFKA_BOOTSTRAP_SERVERS`: Kafka brokers
@@ -273,6 +290,7 @@ Tilt provides:
 - `VAULT_PROVIDER`: Key provider (filesystem/hashicorp/azure)
 
 #### Admin Service
+
 - Same as chat-service (no Kafka required)
 
 ## Scalability Considerations
