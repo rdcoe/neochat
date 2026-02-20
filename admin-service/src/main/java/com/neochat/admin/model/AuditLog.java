@@ -11,7 +11,7 @@ import java.util.UUID;
  * Audit log entity stored in PostgreSQL
  */
 @Entity
-@Table(name = "audit_logs")
+@Table(name = "audit_logs", schema = "admin")
 public class AuditLog extends PanacheEntityBase {
 
     @Id

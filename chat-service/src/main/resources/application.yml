@@ -28,6 +28,7 @@ quarkus:
   # Hibernate
   hibernate-orm:
     database:
+      default-schema: chat
       generation: update
 
   # Kafka Configuration
