@@ -2,7 +2,6 @@ package com.neochat.chat.model;
 
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity;
-import org.bson.types.ObjectId;
 
 import java.time.Instant;
 import java.util.List;
@@ -12,7 +11,6 @@ import java.util.List;
  */
 @MongoEntity(collection = "conversations")
 public class Conversation extends ReactivePanacheMongoEntity {
-    private ObjectId id;
     private String conversationId;
     private List<String> participants;
     private List<String> overseers;
@@ -30,14 +28,6 @@ public class Conversation extends ReactivePanacheMongoEntity {
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
         this.status = "active";
-    }
-
-    public ObjectId getId() {
-        return id;
-    }
-
-    public void setId(ObjectId id) {
-        this.id = id;
     }
 
     public String getConversationId() {

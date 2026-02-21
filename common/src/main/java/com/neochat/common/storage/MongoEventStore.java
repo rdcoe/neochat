@@ -4,7 +4,6 @@ import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.bson.types.ObjectId;
 
 import java.time.Instant;
 import java.util.List;
@@ -56,7 +55,6 @@ public class MongoEventStore implements EventStore, ReactivePanacheMongoReposito
      * MongoDB document for storing chat events
      */
     public static class MongoEventDocument extends ReactivePanacheMongoEntity {
-        private ObjectId id;
         private String eventId;
         private String conversationId;
         private String eventType;
@@ -64,14 +62,6 @@ public class MongoEventStore implements EventStore, ReactivePanacheMongoReposito
         private String userId;
         private Instant timestamp;
         private Instant createdAt; // For TTL index
-
-        public ObjectId getId() {
-            return id;
-        }
-
-        public void setId(ObjectId id) {
-            this.id = id;
-        }
 
         public String getEventId() {
             return eventId;
