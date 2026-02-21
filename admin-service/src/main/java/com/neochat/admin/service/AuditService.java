@@ -21,8 +21,8 @@ public class AuditService {
                                String resourceId, String ipAddress, String userAgent, String status) {
         return Panache.withTransaction(() -> {
             AuditLog log = AuditLog.create(userId, action, resourceType, resourceId, status);
-            log.ipAddress = ipAddress;
-            log.userAgent = userAgent;
+            log.setIpAddress(ipAddress);
+            log.setUserAgent(userAgent);
             
             return Panache.getSession()
                     .flatMap(session -> session.persist(log))

@@ -46,7 +46,7 @@ public class AdminResource {
                         securityContext.getUserPrincipal().getName(),
                         "CREATE_USER",
                         "user",
-                        user.userId,
+                        user.getUserId(),
                         null,
                         null,
                         "success"

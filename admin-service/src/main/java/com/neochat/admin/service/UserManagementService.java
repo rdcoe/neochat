@@ -37,8 +37,8 @@ public class UserManagementService implements ReactivePanacheMongoRepository<Use
         return find("userId", userId)
                 .firstResult()
                 .onItem().ifNotNull().transformToUni(user -> {
-                    user.roles = roles;
-                    user.updatedAt = Instant.now();
+                    user.setRoles(roles);
+                    user.setUpdatedAt(Instant.now());
                     return update(user);
                 });
     }
@@ -50,8 +50,8 @@ public class UserManagementService implements ReactivePanacheMongoRepository<Use
         return find("userId", userId)
                 .firstResult()
                 .onItem().ifNotNull().transformToUni(user -> {
-                    user.groups = groups;
-                    user.updatedAt = Instant.now();
+                    user.setGroups(groups);
+                    user.setUpdatedAt(Instant.now());
                     return update(user);
                 });
     }
@@ -63,8 +63,8 @@ public class UserManagementService implements ReactivePanacheMongoRepository<Use
         return find("userId", userId)
                 .firstResult()
                 .onItem().ifNotNull().transformToUni(user -> {
-                    user.status = status;
-                    user.updatedAt = Instant.now();
+                    user.setStatus(status);
+                    user.setUpdatedAt(Instant.now());
                     return update(user);
                 });
     }

@@ -1,26 +1,24 @@
 package com.neochat.admin.model;
 
-import io.quarkus.mongodb.panache.common.MongoEntity;
-import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity;
-import org.bson.types.ObjectId;
-
 import java.time.Instant;
 import java.util.Set;
+
+import io.quarkus.mongodb.panache.common.MongoEntity;
+import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity;
 
 /**
  * User entity stored in MongoDB
  */
 @MongoEntity(collection = "users")
 public class User extends ReactivePanacheMongoEntity {
-    public ObjectId id;
-    public String userId;
-    public String email;
-    public String name;
-    public Set<String> roles;
-    public Set<String> groups;
-    public String status;
-    public Instant createdAt;
-    public Instant updatedAt;
+    private String userId;
+    private String email;
+    private String name;
+    private Set<String> roles;
+    private Set<String> groups;
+    private String status;
+    private Instant createdAt;
+    private Instant updatedAt;
 
     public User() {
     }
@@ -34,5 +32,69 @@ public class User extends ReactivePanacheMongoEntity {
         this.status = "active";
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Set<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(Set<String> roles) {
+        this.roles = roles;
+    }
+
+    public Set<String> getGroups() {
+        return groups;
+    }
+
+    public void setGroups(Set<String> groups) {
+        this.groups = groups;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }
