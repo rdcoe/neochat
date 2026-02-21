@@ -15,6 +15,8 @@ import java.util.Set;
 @ApplicationScoped
 public class UserManagementService implements ReactivePanacheMongoRepository<User> {
 
+    private static final String USER_ID = "userId";
+
     /**
      * Create a new user
      */
@@ -27,14 +29,14 @@ public class UserManagementService implements ReactivePanacheMongoRepository<Use
      * Get user by ID
      */
     public Uni<User> getUser(String userId) {
-        return find("userId", userId).firstResult();
+        return find(USER_ID, userId).firstResult();
     }
 
     /**
      * Update user roles
      */
     public Uni<User> updateUserRoles(String userId, Set<String> roles) {
-        return find("userId", userId)
+        return find(USER_ID, userId)
                 .firstResult()
                 .onItem().ifNotNull().transformToUni(user -> {
                     user.setRoles(roles);
@@ -47,7 +49,7 @@ public class UserManagementService implements ReactivePanacheMongoRepository<Use
      * Update user groups
      */
     public Uni<User> updateUserGroups(String userId, Set<String> groups) {
-        return find("userId", userId)
+        return find(USER_ID, userId)
                 .firstResult()
                 .onItem().ifNotNull().transformToUni(user -> {
                     user.setGroups(groups);
@@ -60,7 +62,7 @@ public class UserManagementService implements ReactivePanacheMongoRepository<Use
      * Update user status
      */
     public Uni<User> updateUserStatus(String userId, String status) {
-        return find("userId", userId)
+        return find(USER_ID, userId)
                 .firstResult()
                 .onItem().ifNotNull().transformToUni(user -> {
                     user.setStatus(status);
@@ -96,7 +98,7 @@ public class UserManagementService implements ReactivePanacheMongoRepository<Use
      * Delete user
      */
     public Uni<Boolean> deleteUser(String userId) {
-        return delete("userId", userId)
+        return delete(USER_ID, userId)
                 .map(count -> count > 0);
     }
 }

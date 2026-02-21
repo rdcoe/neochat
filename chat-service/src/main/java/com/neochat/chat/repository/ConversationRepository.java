@@ -7,6 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -19,10 +20,10 @@ public class ConversationRepository implements ReactivePanacheMongoRepository<Co
      * Check if a user can access a conversation
      */
     public Uni<Boolean> canAccess(String userId, String conversationId) {
-        return find("conversationId = ?1 and (participants in ?2 or overseers in ?2)", 
-                    conversationId, List.of(userId))
+        return find("conversationId = ?1 and (participants in ?2 or overseers in ?2)",
+                conversationId, List.of(userId))
                 .firstResult()
-                .map(conversation -> conversation != null);
+                .map(Objects::nonNull);
     }
 
     /**
