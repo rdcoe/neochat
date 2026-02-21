@@ -29,8 +29,8 @@ public class EventRepository {
      */
     public Uni<List<EventStore.ChatEventRecord>> getEventsForConversation(
             String conversationId, Instant from, Instant to) {
-        
-        Instant thirtyDaysAgo = Instant.now().minusSeconds(30 * 24 * 60 * 60);
+
+        Instant thirtyDaysAgo = Instant.now().minusSeconds(30 * 24 * 60 * (long) 60);
 
         // If querying recent data (within 30 days), use MongoDB
         if (from.isAfter(thirtyDaysAgo)) {
@@ -45,9 +45,8 @@ public class EventRepository {
         // If spanning both hot and cold storage, query both and merge
         return Uni.combine().all()
                 .unis(
-                    mongoEventStore.getEvents(conversationId, thirtyDaysAgo, to),
-                    postgresEventStore.getEvents(conversationId, from, thirtyDaysAgo)
-                )
+                        mongoEventStore.getEvents(conversationId, thirtyDaysAgo, to),
+                        postgresEventStore.getEvents(conversationId, from, thirtyDaysAgo))
                 .with((mongoEvents, postgresEvents) -> {
                     List<EventStore.ChatEventRecord> allEvents = new ArrayList<>();
                     allEvents.addAll(postgresEvents);
@@ -62,12 +61,11 @@ public class EventRepository {
      * Get recent events for a conversation (last N events)
      */
     public Uni<List<EventStore.ChatEventRecord>> getRecentEvents(String conversationId, int limit) {
-        Instant thirtyDaysAgo = Instant.now().minusSeconds(30 * 24 * 60 * 60);
+        Instant thirtyDaysAgo = Instant.now().minusSeconds(30 * 24 * 60 * (long) 60);
         return mongoEventStore.getEvents(conversationId, thirtyDaysAgo, Instant.now())
                 .map(events -> events.stream()
                         .sorted((e1, e2) -> e2.timestamp().compareTo(e1.timestamp()))
                         .limit(limit)
-                        .toList()
-                );
+                        .toList());
     }
 }

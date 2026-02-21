@@ -31,18 +31,17 @@ public class KafkaEventProducer {
     public Uni<Void> publishEvent(ChatEvent event) {
         try {
             String payload = objectMapper.writeValueAsString(event);
-            
+
             // Use conversationId as partition key to ensure ordering
-            KafkaRecord<String, String> record = KafkaRecord.of(
-                event.conversationId(),
-                payload
-            );
+            KafkaRecord<String, String> kafkarecord = KafkaRecord.of(
+                    event.conversationId(),
+                    payload);
 
             LOG.debugf("Publishing event %s to conversation %s", event.eventId(), event.conversationId());
-            
-            return Uni.createFrom().completionStage(emitter.send(record))
+
+            return Uni.createFrom().completionStage(emitter.send(kafkarecord))
                     .replaceWithVoid();
-                    
+
         } catch (Exception e) {
             LOG.error("Failed to publish event to Kafka", e);
             return Uni.createFrom().failure(e);

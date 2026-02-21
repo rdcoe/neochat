@@ -32,6 +32,9 @@ public class AdminResource {
     @Context
     SecurityContext securityContext;
 
+    private static final String SUCCESS = "success";
+    private static final String FAILURE = "failure";
+
     /**
      * Create a new user
      */
@@ -41,22 +44,17 @@ public class AdminResource {
     public Uni<Response> createUser(CreateUserRequest request) {
         return userManagementService
                 .createUser(request.userId, request.email, request.name, request.roles, request.groups)
-                .flatMap(user -> 
-                    auditService.logAction(
+                .flatMap(user -> auditService.logAction(
                         securityContext.getUserPrincipal().getName(),
                         "CREATE_USER",
                         "user",
                         user.getUserId(),
                         null,
                         null,
-                        "success"
-                    ).replaceWith(Response.status(Response.Status.CREATED).entity(user).build())
-                )
-                .onFailure().recoverWithItem(t -> 
-                    Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                            .entity(new ErrorResponse(t.getMessage()))
-                            .build()
-                );
+                        SUCCESS).replaceWith(Response.status(Response.Status.CREATED).entity(user).build()))
+                .onFailure().recoverWithItem(t -> Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity(new ErrorResponse(t.getMessage()))
+                        .build());
     }
 
     /**
@@ -64,7 +62,7 @@ public class AdminResource {
      */
     @GET
     @Path("/users/{userId}")
-    @RolesAllowed({"admin", "overseer"})
+    @RolesAllowed({ "admin", "overseer" })
     public Uni<Response> getUser(@PathParam("userId") String userId) {
         return userManagementService.getUser(userId)
                 .onItem().ifNotNull().transform(user -> Response.ok(user).build())
@@ -76,7 +74,7 @@ public class AdminResource {
      */
     @GET
     @Path("/users")
-    @RolesAllowed({"admin", "overseer"})
+    @RolesAllowed({ "admin", "overseer" })
     public Uni<List<User>> listUsers(
             @QueryParam("page") @DefaultValue("0") int page,
             @QueryParam("pageSize") @DefaultValue("20") int pageSize) {
@@ -91,22 +89,17 @@ public class AdminResource {
     @RolesAllowed("admin")
     public Uni<Response> updateUserRoles(@PathParam("userId") String userId, UpdateRolesRequest request) {
         return userManagementService.updateUserRoles(userId, request.roles)
-                .flatMap(user -> 
-                    auditService.logAction(
+                .flatMap(user -> auditService.logAction(
                         securityContext.getUserPrincipal().getName(),
                         "UPDATE_USER_ROLES",
                         "user",
                         userId,
                         null,
                         null,
-                        "success"
-                    ).replaceWith(Response.ok(user).build())
-                )
-                .onFailure().recoverWithItem(t -> 
-                    Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                            .entity(new ErrorResponse(t.getMessage()))
-                            .build()
-                );
+                        SUCCESS).replaceWith(Response.ok(user).build()))
+                .onFailure().recoverWithItem(t -> Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity(new ErrorResponse(t.getMessage()))
+                        .build());
     }
 
     /**
@@ -117,22 +110,17 @@ public class AdminResource {
     @RolesAllowed("admin")
     public Uni<Response> updateUserStatus(@PathParam("userId") String userId, UpdateStatusRequest request) {
         return userManagementService.updateUserStatus(userId, request.status)
-                .flatMap(user -> 
-                    auditService.logAction(
+                .flatMap(user -> auditService.logAction(
                         securityContext.getUserPrincipal().getName(),
                         "UPDATE_USER_STATUS",
                         "user",
                         userId,
                         null,
                         null,
-                        "success"
-                    ).replaceWith(Response.ok(user).build())
-                )
-                .onFailure().recoverWithItem(t -> 
-                    Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                            .entity(new ErrorResponse(t.getMessage()))
-                            .build()
-                );
+                        SUCCESS).replaceWith(Response.ok(user).build()))
+                .onFailure().recoverWithItem(t -> Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity(new ErrorResponse(t.getMessage()))
+                        .build());
     }
 
     /**
@@ -143,35 +131,36 @@ public class AdminResource {
     @RolesAllowed("admin")
     public Uni<Response> deleteUser(@PathParam("userId") String userId) {
         return userManagementService.deleteUser(userId)
-                .flatMap(deleted -> 
-                    auditService.logAction(
+                .flatMap(deleted -> auditService.logAction(
                         securityContext.getUserPrincipal().getName(),
                         "DELETE_USER",
                         "user",
                         userId,
                         null,
                         null,
-                        deleted ? "success" : "failure"
-                    ).replaceWith(deleted ? Response.noContent().build() : 
-                                 Response.status(Response.Status.NOT_FOUND).build())
-                )
-                .onFailure().recoverWithItem(t -> 
-                    Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                            .entity(new ErrorResponse(t.getMessage()))
-                            .build()
-                );
+                        deleted.booleanValue() ? SUCCESS : FAILURE)
+                        .replaceWith(deleted.booleanValue() ? Response.noContent().build()
+                                : Response.status(Response.Status.NOT_FOUND).build()))
+                .onFailure().recoverWithItem(t -> Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity(new ErrorResponse(t.getMessage()))
+                        .build());
     }
 
     // Request/Response DTOs
     public static record CreateUserRequest(
-        String userId,
-        String email,
-        String name,
-        Set<String> roles,
-        Set<String> groups
-    ) {}
+            String userId,
+            String email,
+            String name,
+            Set<String> roles,
+            Set<String> groups) {
+    }
 
-    public static record UpdateRolesRequest(Set<String> roles) {}
-    public static record UpdateStatusRequest(String status) {}
-    public static record ErrorResponse(String error) {}
+    public static record UpdateRolesRequest(Set<String> roles) {
+    }
+
+    public static record UpdateStatusRequest(String status) {
+    }
+
+    public static record ErrorResponse(String error) {
+    }
 }

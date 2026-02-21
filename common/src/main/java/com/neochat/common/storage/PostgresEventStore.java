@@ -19,7 +19,7 @@ public class PostgresEventStore implements EventStore {
 
     @Override
     public Uni<Void> storeEvent(String conversationId, String eventId, String eventType,
-                                String payload, String userId, Instant timestamp) {
+            String payload, String userId, Instant timestamp) {
         var entity = new PostgresEventEntity();
         entity.setId(UUID.fromString(eventId));
         entity.setConversationId(conversationId);
@@ -28,39 +28,32 @@ public class PostgresEventStore implements EventStore {
         entity.setUserId(userId);
         entity.setTimestamp(timestamp);
 
-        return Panache.withTransaction(() -> 
-            Panache.getSession()
+        return Panache.withTransaction(() -> Panache.getSession()
                 .flatMap(session -> session.persist(entity))
-                .replaceWithVoid()
-        );
+                .replaceWithVoid());
     }
 
     @Override
     public Uni<List<ChatEventRecord>> getEvents(String conversationId, Instant from, Instant to) {
         return PostgresEventEntity
                 .<PostgresEventEntity>find(
-                    "conversationId = ?1 and timestamp >= ?2 and timestamp <= ?3 ORDER BY timestamp", 
-                    conversationId, from, to
-                )
+                        "conversationId = ?1 and timestamp >= ?2 and timestamp <= ?3 ORDER BY timestamp",
+                        conversationId, from, to)
                 .list()
                 .map(entities -> entities.stream()
-                    .map(entity -> new ChatEventRecord(
-                        entity.getId().toString(),
-                        entity.getConversationId(),
-                        entity.getEventType(),
-                        entity.getPayload(),
-                        entity.getUserId(),
-                        entity.getTimestamp()
-                    ))
-                    .toList()
-                );
+                        .map(entity -> new ChatEventRecord(
+                                entity.getId().toString(),
+                                entity.getConversationId(),
+                                entity.getEventType(),
+                                entity.getPayload(),
+                                entity.getUserId(),
+                                entity.getTimestamp()))
+                        .toList());
     }
 
     @Override
     public Uni<Long> deleteEventsOlderThan(Instant threshold) {
-        return Panache.withTransaction(() ->
-            PostgresEventEntity.delete("timestamp < ?1", threshold)
-        );
+        return Panache.withTransaction(() -> PostgresEventEntity.delete("timestamp < ?1", threshold));
     }
 
     /**
@@ -69,7 +62,7 @@ public class PostgresEventStore implements EventStore {
     @Entity
     @Table(name = "chat_events", schema = "chat")
     public static class PostgresEventEntity extends PanacheEntityBase {
-        
+
         @Id
         @Column(name = "id")
         private UUID id;
