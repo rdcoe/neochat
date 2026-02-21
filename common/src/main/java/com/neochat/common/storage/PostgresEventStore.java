@@ -4,6 +4,7 @@ import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.persistence.*;
 
 import java.time.Instant;
@@ -16,6 +17,9 @@ import java.util.UUID;
  */
 @ApplicationScoped
 public class PostgresEventStore implements EventStore {
+
+    @Inject
+    PostgresEventRepository eventRepository;
 
     @Override
     public Uni<Void> storeEvent(String conversationId, String eventId, String eventType,
@@ -35,8 +39,8 @@ public class PostgresEventStore implements EventStore {
 
     @Override
     public Uni<List<ChatEventRecord>> getEvents(String conversationId, Instant from, Instant to) {
-        return PostgresEventEntity
-                .<PostgresEventEntity>find(
+        return eventRepository
+            .find(
                         "conversationId = ?1 and timestamp >= ?2 and timestamp <= ?3 ORDER BY timestamp",
                         conversationId, from, to)
                 .list()
@@ -53,7 +57,7 @@ public class PostgresEventStore implements EventStore {
 
     @Override
     public Uni<Long> deleteEventsOlderThan(Instant threshold) {
-        return Panache.withTransaction(() -> PostgresEventEntity.delete("timestamp < ?1", threshold));
+        return Panache.withTransaction(() -> eventRepository.delete("timestamp < ?1", threshold));
     }
 
     /**

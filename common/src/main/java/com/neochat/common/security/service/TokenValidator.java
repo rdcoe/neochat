@@ -6,6 +6,7 @@ import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.auth.principal.ParseException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.NotAuthorizedException;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
@@ -49,14 +50,16 @@ public class TokenValidator {
             
             Set<String> groups = new HashSet<>();
             Object groupsClaim = jwt.getClaim("groups");
-            if (groupsClaim instanceof Set) {
-                groups.addAll((Set<String>) groupsClaim);
+            if (groupsClaim instanceof Set<?>) {
+                @SuppressWarnings("unchecked")
+                Set<String> castedGroups = (Set<String>) groupsClaim;
+                groups.addAll(castedGroups);
             }
             
             return new IdentityTokenClaims(subject, email, roles, groups);
         } catch (ParseException e) {
             LOG.error("Failed to parse token", e);
-            throw new RuntimeException("Invalid token", e);
+            throw new NotAuthorizedException("Invalid token", e);
         }
     }
 
