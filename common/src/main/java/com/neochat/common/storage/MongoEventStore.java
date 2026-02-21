@@ -4,7 +4,6 @@ import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.bson.types.ObjectId;
 
 import java.time.Instant;
 import java.util.List;
@@ -20,13 +19,13 @@ public class MongoEventStore implements EventStore, ReactivePanacheMongoReposito
     public Uni<Void> storeEvent(String conversationId, String eventId, String eventType,
                                 String payload, String userId, Instant timestamp) {
         var document = new MongoEventDocument();
-        document.eventId = eventId;
-        document.conversationId = conversationId;
-        document.eventType = eventType;
-        document.payload = payload;
-        document.userId = userId;
-        document.timestamp = timestamp;
-        document.createdAt = Instant.now();
+        document.setEventId(eventId);
+        document.setConversationId(conversationId);
+        document.setEventType(eventType);
+        document.setPayload(payload);
+        document.setUserId(userId);
+        document.setTimestamp(timestamp);
+        document.setCreatedAt(Instant.now());
 
         return persist(document).replaceWithVoid();
     }
@@ -37,12 +36,12 @@ public class MongoEventStore implements EventStore, ReactivePanacheMongoReposito
                     conversationId, from, to)
                 .stream()
                 .map(doc -> new ChatEventRecord(
-                    doc.eventId,
-                    doc.conversationId,
-                    doc.eventType,
-                    doc.payload,
-                    doc.userId,
-                    doc.timestamp
+                    doc.getEventId(),
+                    doc.getConversationId(),
+                    doc.getEventType(),
+                    doc.getPayload(),
+                    doc.getUserId(),
+                    doc.getTimestamp()
                 ))
                 .collect().asList();
     }
@@ -56,13 +55,68 @@ public class MongoEventStore implements EventStore, ReactivePanacheMongoReposito
      * MongoDB document for storing chat events
      */
     public static class MongoEventDocument extends ReactivePanacheMongoEntity {
-        public ObjectId id;
-        public String eventId;
-        public String conversationId;
-        public String eventType;
-        public String payload;
-        public String userId;
-        public Instant timestamp;
-        public Instant createdAt; // For TTL index
+        private String eventId;
+        private String conversationId;
+        private String eventType;
+        private String payload;
+        private String userId;
+        private Instant timestamp;
+        private Instant createdAt; // For TTL index
+
+        public String getEventId() {
+            return eventId;
+        }
+
+        public void setEventId(String eventId) {
+            this.eventId = eventId;
+        }
+
+        public String getConversationId() {
+            return conversationId;
+        }
+
+        public void setConversationId(String conversationId) {
+            this.conversationId = conversationId;
+        }
+
+        public String getEventType() {
+            return eventType;
+        }
+
+        public void setEventType(String eventType) {
+            this.eventType = eventType;
+        }
+
+        public String getPayload() {
+            return payload;
+        }
+
+        public void setPayload(String payload) {
+            this.payload = payload;
+        }
+
+        public String getUserId() {
+            return userId;
+        }
+
+        public void setUserId(String userId) {
+            this.userId = userId;
+        }
+
+        public Instant getTimestamp() {
+            return timestamp;
+        }
+
+        public void setTimestamp(Instant timestamp) {
+            this.timestamp = timestamp;
+        }
+
+        public Instant getCreatedAt() {
+            return createdAt;
+        }
+
+        public void setCreatedAt(Instant createdAt) {
+            this.createdAt = createdAt;
+        }
     }
 }

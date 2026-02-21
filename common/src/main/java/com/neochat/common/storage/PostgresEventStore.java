@@ -21,12 +21,12 @@ public class PostgresEventStore implements EventStore {
     public Uni<Void> storeEvent(String conversationId, String eventId, String eventType,
                                 String payload, String userId, Instant timestamp) {
         var entity = new PostgresEventEntity();
-        entity.id = UUID.fromString(eventId);
-        entity.conversationId = conversationId;
-        entity.eventType = eventType;
-        entity.payload = payload;
-        entity.userId = userId;
-        entity.timestamp = timestamp;
+        entity.setId(UUID.fromString(eventId));
+        entity.setConversationId(conversationId);
+        entity.setEventType(eventType);
+        entity.setPayload(payload);
+        entity.setUserId(userId);
+        entity.setTimestamp(timestamp);
 
         return Panache.withTransaction(() -> 
             Panache.getSession()
@@ -45,12 +45,12 @@ public class PostgresEventStore implements EventStore {
                 .list()
                 .map(entities -> entities.stream()
                     .map(entity -> new ChatEventRecord(
-                        entity.id.toString(),
-                        entity.conversationId,
-                        entity.eventType,
-                        entity.payload,
-                        entity.userId,
-                        entity.timestamp
+                        entity.getId().toString(),
+                        entity.getConversationId(),
+                        entity.getEventType(),
+                        entity.getPayload(),
+                        entity.getUserId(),
+                        entity.getTimestamp()
                     ))
                     .toList()
                 );
@@ -72,21 +72,69 @@ public class PostgresEventStore implements EventStore {
         
         @Id
         @Column(name = "id")
-        public UUID id;
+        private UUID id;
 
         @Column(name = "conversation_id", nullable = false)
-        public String conversationId;
+        private String conversationId;
 
         @Column(name = "event_type", nullable = false)
-        public String eventType;
+        private String eventType;
 
         @Column(name = "payload", columnDefinition = "TEXT")
-        public String payload;
+        private String payload;
 
         @Column(name = "user_id", nullable = false)
-        public String userId;
+        private String userId;
 
         @Column(name = "timestamp", nullable = false)
-        public Instant timestamp;
+        private Instant timestamp;
+
+        public UUID getId() {
+            return id;
+        }
+
+        public void setId(UUID id) {
+            this.id = id;
+        }
+
+        public String getConversationId() {
+            return conversationId;
+        }
+
+        public void setConversationId(String conversationId) {
+            this.conversationId = conversationId;
+        }
+
+        public String getEventType() {
+            return eventType;
+        }
+
+        public void setEventType(String eventType) {
+            this.eventType = eventType;
+        }
+
+        public String getPayload() {
+            return payload;
+        }
+
+        public void setPayload(String payload) {
+            this.payload = payload;
+        }
+
+        public String getUserId() {
+            return userId;
+        }
+
+        public void setUserId(String userId) {
+            this.userId = userId;
+        }
+
+        public Instant getTimestamp() {
+            return timestamp;
+        }
+
+        public void setTimestamp(Instant timestamp) {
+            this.timestamp = timestamp;
+        }
     }
 }
