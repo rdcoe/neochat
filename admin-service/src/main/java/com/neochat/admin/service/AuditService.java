@@ -1,9 +1,11 @@
 package com.neochat.admin.service;
 
 import com.neochat.admin.model.AuditLog;
+import com.neochat.admin.repository.AuditLogRepository;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import java.time.Instant;
 import java.util.List;
@@ -13,6 +15,9 @@ import java.util.List;
  */
 @ApplicationScoped
 public class AuditService {
+
+    @Inject
+    AuditLogRepository auditLogRepository;
 
     /**
      * Create an audit log entry
@@ -34,54 +39,41 @@ public class AuditService {
      * Get audit logs for a specific user
      */
     public Uni<List<AuditLog>> getUserAuditLogs(String userId, int page, int pageSize) {
-        return AuditLog.<AuditLog>find("userId = ?1 ORDER BY timestamp DESC", userId)
-                .page(page, pageSize)
-                .list();
+        return auditLogRepository.findByUserId(userId, page, pageSize);
     }
 
     /**
      * Get audit logs for a specific resource
      */
     public Uni<List<AuditLog>> getResourceAuditLogs(String resourceType, String resourceId, int page, int pageSize) {
-        return AuditLog.<AuditLog>find("resourceType = ?1 AND resourceId = ?2 ORDER BY timestamp DESC", 
-                                       resourceType, resourceId)
-                .page(page, pageSize)
-                .list();
+        return auditLogRepository.findByResource(resourceType, resourceId, page, pageSize);
     }
 
     /**
      * Get audit logs within a time range
      */
     public Uni<List<AuditLog>> getAuditLogsByTimeRange(Instant from, Instant to, int page, int pageSize) {
-        return AuditLog.<AuditLog>find("timestamp >= ?1 AND timestamp <= ?2 ORDER BY timestamp DESC", from, to)
-                .page(page, pageSize)
-                .list();
+        return auditLogRepository.findByTimeRange(from, to, page, pageSize);
     }
 
     /**
      * Get audit logs by action
      */
     public Uni<List<AuditLog>> getAuditLogsByAction(String action, int page, int pageSize) {
-        return AuditLog.<AuditLog>find("action = ?1 ORDER BY timestamp DESC", action)
-                .page(page, pageSize)
-                .list();
+        return auditLogRepository.findByAction(action, page, pageSize);
     }
 
     /**
      * Get failed actions audit logs
      */
     public Uni<List<AuditLog>> getFailedActions(int page, int pageSize) {
-        return AuditLog.<AuditLog>find("status = 'failure' ORDER BY timestamp DESC")
-                .page(page, pageSize)
-                .list();
+        return auditLogRepository.findFailed(page, pageSize);
     }
 
     /**
      * Delete old audit logs (for cleanup)
      */
     public Uni<Long> deleteOldAuditLogs(Instant olderThan) {
-        return Panache.withTransaction(() -> 
-            AuditLog.delete("timestamp < ?1", olderThan)
-        );
+        return Panache.withTransaction(() -> auditLogRepository.deleteOlderThan(olderThan));
     }
 }
