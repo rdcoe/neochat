@@ -1,19 +1,27 @@
 package com.neochat.admin.resource;
 
+import java.util.List;
+import java.util.Set;
+
 import com.neochat.admin.model.User;
 import com.neochat.admin.service.AuditService;
 import com.neochat.admin.service.UserManagementService;
+
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.inject.Inject;
-import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
-
-import java.util.List;
-import java.util.Set;
 
 /**
  * REST resource for admin operations
@@ -23,17 +31,19 @@ import java.util.Set;
 @Consumes(MediaType.APPLICATION_JSON)
 public class AdminResource {
 
-    @Inject
-    UserManagementService userManagementService;
-
-    @Inject
-    AuditService auditService;
-
-    @Context
-    SecurityContext securityContext;
-
     private static final String SUCCESS = "success";
     private static final String FAILURE = "failure";
+
+    private final UserManagementService userManagementService;
+    private final AuditService auditService;
+    private final SecurityContext securityContext;
+
+    public AdminResource(UserManagementService userManagementService, AuditService auditService,
+            SecurityContext securityContext) {
+        this.userManagementService = userManagementService;
+        this.auditService = auditService;
+        this.securityContext = securityContext;
+    }
 
     /**
      * Create a new user

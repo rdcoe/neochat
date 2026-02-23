@@ -1,15 +1,17 @@
 package com.neochat.common.storage;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import jakarta.persistence.*;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 /**
  * PostgreSQL implementation of EventStore
@@ -18,8 +20,11 @@ import java.util.UUID;
 @ApplicationScoped
 public class PostgresEventStore implements EventStore {
 
-    @Inject
-    PostgresEventRepository eventRepository;
+    private final PostgresEventRepository eventRepository;
+
+    public PostgresEventStore(PostgresEventRepository eventRepository) {
+        this.eventRepository = eventRepository;
+    }
 
     @Override
     public Uni<Void> storeEvent(String conversationId, String eventId, String eventType,
@@ -40,7 +45,7 @@ public class PostgresEventStore implements EventStore {
     @Override
     public Uni<List<ChatEventRecord>> getEvents(String conversationId, Instant from, Instant to) {
         return eventRepository
-            .find(
+                .find(
                         "conversationId = ?1 and timestamp >= ?2 and timestamp <= ?3 ORDER BY timestamp",
                         conversationId, from, to)
                 .list()

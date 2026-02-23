@@ -1,15 +1,21 @@
 package com.neochat.admin.resource;
 
-import com.neochat.admin.model.AuditLog;
-import com.neochat.admin.service.AuditService;
-import io.smallrye.mutiny.Uni;
-import jakarta.annotation.security.RolesAllowed;
-import jakarta.inject.Inject;
-import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.MediaType;
-
 import java.time.Instant;
 import java.util.List;
+
+import com.neochat.admin.model.AuditLog;
+import com.neochat.admin.service.AuditService;
+
+import io.smallrye.mutiny.Uni;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
 
 /**
  * REST resource for audit operations
@@ -17,11 +23,14 @@ import java.util.List;
 @Path("/api/audit")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "overseer"})
+@RolesAllowed({ "admin", "overseer" })
 public class AuditResource {
 
-    @Inject
-    AuditService auditService;
+    private final AuditService auditService;
+
+    public AuditResource(AuditService auditService) {
+        this.auditService = auditService;
+    }
 
     /**
      * Get audit logs for a user

@@ -1,14 +1,14 @@
 package com.neochat.admin.service;
 
+import java.time.Instant;
+import java.util.List;
+
 import com.neochat.admin.model.AuditLog;
 import com.neochat.admin.repository.AuditLogRepository;
+
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-
-import java.time.Instant;
-import java.util.List;
 
 /**
  * Service for managing audit logs
@@ -16,19 +16,22 @@ import java.util.List;
 @ApplicationScoped
 public class AuditService {
 
-    @Inject
-    AuditLogRepository auditLogRepository;
+    private final AuditLogRepository auditLogRepository;
+
+    public AuditService(AuditLogRepository auditLogRepository) {
+        this.auditLogRepository = auditLogRepository;
+    }
 
     /**
      * Create an audit log entry
      */
-    public Uni<Void> logAction(String userId, String action, String resourceType, 
-                               String resourceId, String ipAddress, String userAgent, String status) {
+    public Uni<Void> logAction(String userId, String action, String resourceType,
+            String resourceId, String ipAddress, String userAgent, String status) {
         return Panache.withTransaction(() -> {
             AuditLog log = AuditLog.create(userId, action, resourceType, resourceId, status);
             log.setIpAddress(ipAddress);
             log.setUserAgent(userAgent);
-            
+
             return Panache.getSession()
                     .flatMap(session -> session.persist(log))
                     .replaceWithVoid();

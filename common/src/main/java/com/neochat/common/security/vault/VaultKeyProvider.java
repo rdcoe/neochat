@@ -16,7 +16,6 @@ import org.jboss.logging.Logger;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
 
 /**
  * Provides RSA key pairs from various sources (filesystem, HashiCorp Vault,
@@ -45,11 +44,14 @@ public class VaultKeyProvider {
     @ConfigProperty(name = "vault.hashicorp.secret-path", defaultValue = "secret/data/neochat/keys")
     String hashicorpSecretPath;
 
-    @Inject
-    Instance<KeyVaultClient> keyVaultClient;
+    private final Instance<KeyVaultClient> keyVaultClient;
 
     private PrivateKey cachedPrivateKey;
     private PublicKey cachedPublicKey;
+
+    public VaultKeyProvider(Instance<KeyVaultClient> keyVaultClient) {
+        this.keyVaultClient = keyVaultClient;
+    }
 
     /**
      * Get private key for signing
