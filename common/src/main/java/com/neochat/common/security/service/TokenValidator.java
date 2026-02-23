@@ -1,11 +1,10 @@
 package com.neochat.common.security.service;
 
 import com.neochat.common.security.model.IdentityTokenClaims;
-import com.neochat.common.security.vault.VaultKeyProvider;
 import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.auth.principal.ParseException;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+import jakarta.enterprise.inject.Instance;
 import jakarta.ws.rs.NotAuthorizedException;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
@@ -20,16 +19,21 @@ import java.util.Set;
 public class TokenValidator {
     private static final Logger LOG = Logger.getLogger(TokenValidator.class);
 
-    @Inject
-    JWTParser jwtParser;
+    private final JWTParser jwtParser;
+    private final Instance<JwtVerificationKeySource> verificationKeySource;
 
-    @Inject
-    VaultKeyProvider vaultKeyProvider;
+    public TokenValidator(JWTParser jwtParser, Instance<JwtVerificationKeySource> verificationKeySource) {
+        this.jwtParser = jwtParser;
+        this.verificationKeySource = verificationKeySource;
+    }
 
     /**
      * Validate and parse a JWT token
      */
     public JsonWebToken validateToken(String token) throws ParseException {
+        if (verificationKeySource.isResolvable()) {
+            return jwtParser.verify(token, verificationKeySource.get().getVerificationKey());
+        }
         return jwtParser.parse(token);
     }
 
@@ -39,15 +43,15 @@ public class TokenValidator {
     public IdentityTokenClaims extractIdentityClaims(String token) {
         try {
             JsonWebToken jwt = validateToken(token);
-            
+
             String subject = jwt.getSubject();
             String email = jwt.getClaim("email");
-            
+
             Set<String> roles = new HashSet<>();
             if (jwt.getGroups() != null) {
                 roles.addAll(jwt.getGroups());
             }
-            
+
             Set<String> groups = new HashSet<>();
             Object groupsClaim = jwt.getClaim("groups");
             if (groupsClaim instanceof Set<?>) {
@@ -55,7 +59,7 @@ public class TokenValidator {
                 Set<String> castedGroups = (Set<String>) groupsClaim;
                 groups.addAll(castedGroups);
             }
-            
+
             return new IdentityTokenClaims(subject, email, roles, groups);
         } catch (ParseException e) {
             LOG.error("Failed to parse token", e);

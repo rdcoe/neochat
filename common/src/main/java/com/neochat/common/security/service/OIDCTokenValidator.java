@@ -7,7 +7,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.oidc.OidcSession;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
 
 /**
  * Validates and manages OIDC tokens
@@ -16,8 +15,11 @@ import jakarta.inject.Inject;
 public class OIDCTokenValidator {
     private static final Logger LOG = Logger.getLogger(OIDCTokenValidator.class);
 
-    @Inject
-    Instance<OidcSession> oidcSession;
+    private final Instance<OidcSession> oidcSession;
+
+    public OIDCTokenValidator(Instance<OidcSession> oidcSession) {
+        this.oidcSession = oidcSession;
+    }
 
     /**
      * Get the current OIDC ID token
