@@ -4,8 +4,8 @@ import com.neochat.common.security.model.IdentityTokenClaims;
 import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.auth.principal.ParseException;
 import jakarta.annotation.Priority;
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
+import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Instance;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  */
 @Alternative
 @Priority(1)
-@ApplicationScoped
+@Dependent
 public class MockPersonaTokenValidator extends TokenValidator {
 
     public MockPersonaTokenValidator(JWTParser jwtParser, Instance<JwtVerificationKeySource> verificationKeySource) {
