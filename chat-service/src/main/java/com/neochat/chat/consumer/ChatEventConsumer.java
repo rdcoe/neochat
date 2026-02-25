@@ -21,14 +21,18 @@ import java.util.concurrent.CompletionStage;
 public class ChatEventConsumer {
     private static final Logger LOG = Logger.getLogger(ChatEventConsumer.class);
 
-    @Inject
-    MongoEventStore mongoEventStore;
+    private final MongoEventStore mongoEventStore;
+    private final PostgresEventStore postgresEventStore;
+    private final ObjectMapper objectMapper;
 
     @Inject
-    PostgresEventStore postgresEventStore;
-
-    @Inject
-    ObjectMapper objectMapper;
+    public ChatEventConsumer(MongoEventStore mongoEventStore,
+            PostgresEventStore postgresEventStore,
+            ObjectMapper objectMapper) {
+        this.mongoEventStore = mongoEventStore;
+        this.postgresEventStore = postgresEventStore;
+        this.objectMapper = objectMapper;
+    }
 
     /**
      * Consume chat events from Kafka

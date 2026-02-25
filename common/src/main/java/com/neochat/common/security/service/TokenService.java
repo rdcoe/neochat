@@ -15,8 +15,12 @@ import java.util.Set;
 public class TokenService {
     private static final Logger LOG = Logger.getLogger(TokenService.class);
 
+    private final VaultKeyProvider vaultKeyProvider;
+
     @Inject
-    VaultKeyProvider vaultKeyProvider;
+    public TokenService(VaultKeyProvider vaultKeyProvider) {
+        this.vaultKeyProvider = vaultKeyProvider;
+    }
 
     /**
      * Sign an identity token with the given claims

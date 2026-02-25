@@ -33,8 +33,12 @@ public class JWTAuthZFilter implements ContainerRequestFilter {
     @ConfigProperty(name = "auth.jwt.enabled", defaultValue = "true")
     boolean jwtAuthEnabled;
 
+    private final TokenValidator tokenValidator;
+
     @Inject
-    TokenValidator tokenValidator;
+    public JWTAuthZFilter(TokenValidator tokenValidator) {
+        this.tokenValidator = tokenValidator;
+    }
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {

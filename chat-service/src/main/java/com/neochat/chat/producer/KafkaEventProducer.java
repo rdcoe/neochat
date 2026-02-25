@@ -17,12 +17,15 @@ import org.jboss.logging.Logger;
 public class KafkaEventProducer {
     private static final Logger LOG = Logger.getLogger(KafkaEventProducer.class);
 
-    @Inject
-    @Channel("chat-events-out")
-    Emitter<KafkaRecord<String, String>> emitter;
+    private final Emitter<KafkaRecord<String, String>> emitter;
+    private final ObjectMapper objectMapper;
 
     @Inject
-    ObjectMapper objectMapper;
+    public KafkaEventProducer(@Channel("chat-events-out") Emitter<KafkaRecord<String, String>> emitter,
+            ObjectMapper objectMapper) {
+        this.emitter = emitter;
+        this.objectMapper = objectMapper;
+    }
 
     /**
      * Publish chat event to Kafka

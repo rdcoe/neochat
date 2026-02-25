@@ -15,11 +15,15 @@ import org.jboss.logging.Logger;
 public class ChatEventService {
     private static final Logger LOG = Logger.getLogger(ChatEventService.class);
 
-    @Inject
-    ConversationRepository conversationRepository;
+    private final ConversationRepository conversationRepository;
+    private final KafkaEventProducer kafkaEventProducer;
 
     @Inject
-    KafkaEventProducer kafkaEventProducer;
+    public ChatEventService(ConversationRepository conversationRepository,
+            KafkaEventProducer kafkaEventProducer) {
+        this.conversationRepository = conversationRepository;
+        this.kafkaEventProducer = kafkaEventProducer;
+    }
 
     /**
      * Post a message to a conversation

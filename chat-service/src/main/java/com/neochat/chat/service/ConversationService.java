@@ -14,8 +14,12 @@ import java.util.List;
 @ApplicationScoped
 public class ConversationService {
 
+    private final ConversationRepository conversationRepository;
+
     @Inject
-    ConversationRepository conversationRepository;
+    public ConversationService(ConversationRepository conversationRepository) {
+        this.conversationRepository = conversationRepository;
+    }
 
     /**
      * Create a new conversation

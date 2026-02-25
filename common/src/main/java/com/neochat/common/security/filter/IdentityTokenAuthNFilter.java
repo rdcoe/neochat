@@ -39,20 +39,25 @@ public class IdentityTokenAuthNFilter implements ContainerRequestFilter {
     private static final String IDENTITY_TOKEN_HEADER = "X-Identity-Token";
     private static final String IDENTITY_CLAIMS_PROPERTY = "identity.claims";
 
-    @Inject
-    TokenValidator tokenValidator;
-
-    @Inject
-    TokenService tokenService;
-
-    @Inject
-    OIDCTokenValidator oidcTokenValidator;
+    private final TokenValidator tokenValidator;
+    private final TokenService tokenService;
+    private final OIDCTokenValidator oidcTokenValidator;
 
     @Context
     ResourceInfo resourceInfo;
 
+    private final ObjectMapper objectMapper;
+
     @Inject
-    ObjectMapper objectMapper;
+    public IdentityTokenAuthNFilter(TokenValidator tokenValidator,
+            TokenService tokenService,
+            OIDCTokenValidator oidcTokenValidator,
+            ObjectMapper objectMapper) {
+        this.tokenValidator = tokenValidator;
+        this.tokenService = tokenService;
+        this.oidcTokenValidator = oidcTokenValidator;
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
