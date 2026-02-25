@@ -1,0 +1,78 @@
+name: Integration Tests
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: integration-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      matrix:
+        java: [ '21' ]
+
+    env:
+      VAULT_PROVIDER: filesystem
+      VAULT_FS_PRIVATE_KEY: ${{ github.workspace }}/keys/private.pem
+      VAULT_FS_PUBLIC_KEY: ${{ github.workspace }}/keys/public.pem
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: temurin
+          cache: maven
+
+      - name: Generate signing keys for tests
+        run: |
+          chmod +x scripts/generate-keys.sh
+          ./scripts/generate-keys.sh ./keys
+
+      - name: Start integration dependencies
+        run: |
+          docker compose -f docker-compose.dev.yml up -d postgres mongodb zookeeper kafka
+
+      - name: Wait for services to be reachable
+        run: |
+          set -e
+          for i in {1..60}; do
+            pg_ok=0
+            mongo_ok=0
+            kafka_ok=0
+
+            if (echo > /dev/tcp/127.0.0.1/5432) >/dev/null 2>&1; then pg_ok=1; fi
+            if (echo > /dev/tcp/127.0.0.1/27017) >/dev/null 2>&1; then mongo_ok=1; fi
+            if (echo > /dev/tcp/127.0.0.1/9092) >/dev/null 2>&1; then kafka_ok=1; fi
+
+            if [ "$pg_ok" -eq 1 ] && [ "$mongo_ok" -eq 1 ] && [ "$kafka_ok" -eq 1 ]; then
+              echo "All dependencies are reachable"
+              exit 0
+            fi
+
+            echo "Waiting for dependencies... ($i/60)"
+            sleep 2
+          done
+
+          echo "Dependencies did not become ready in time"
+          docker compose -f docker-compose.dev.yml ps
+          exit 1
+
+      - name: Run integration tests
+        run: mvn -pl chat-service verify -Pintegration-tests
+
+      - name: Dump service logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.dev.yml logs --no-color
+
+      - name: Stop integration dependencies
+        if: always()
+        run: docker compose -f docker-compose.dev.yml down -v

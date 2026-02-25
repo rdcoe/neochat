@@ -4,6 +4,7 @@ import com.neochat.common.security.vault.VaultKeyProvider;
 import io.smallrye.jwt.build.Jwt;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.InternalServerErrorException;
 import org.jboss.logging.Logger;
 
 import java.util.Set;
@@ -46,7 +47,7 @@ public class TokenService {
             return token;
         } catch (Exception e) {
             LOG.error("Failed to sign identity token", e);
-            throw new RuntimeException("Failed to sign identity token", e);
+            throw new InternalServerErrorException("Failed to sign identity token", e);
         }
     }
 
@@ -71,7 +72,7 @@ public class TokenService {
             return token;
         } catch (Exception e) {
             LOG.error("Failed to sign access token", e);
-            throw new RuntimeException("Failed to sign access token", e);
+            throw new InternalServerErrorException("Failed to sign access token", e);
         }
     }
 }

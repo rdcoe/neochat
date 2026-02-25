@@ -108,13 +108,57 @@ docker build -f docker/Dockerfile.native -t neochat/chat-service:native .
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run fast unit tests only (default)
 mvn test
 
 # Run tests for specific module
 mvn test -pl chat-service
 mvn test -pl admin-service
+
+# Run integration tests only (separate runner)
+# Requires dependent infrastructure (PostgreSQL, MongoDB, Kafka, etc.)
+mvn verify -Pintegration-tests
 ```
+
+#### Integration test prerequisites
+
+Start local infrastructure before running integration tests:
+
+```bash
+docker compose -f docker-compose.dev.yml up -d postgres mongodb zookeeper kafka
+```
+
+Run integration tests:
+
+```bash
+mvn verify -Pintegration-tests
+```
+
+Stop infrastructure when finished:
+
+```bash
+docker compose -f docker-compose.dev.yml down
+```
+
+#### CI behavior
+
+- `mvn test` runs only fast unit tests.
+- `mvn verify -Pintegration-tests` runs integration tests in the separate integration test runner.
+- GitHub Actions integration tests are available in [`.github/workflows/integration-tests.yml`](.github/workflows/integration-tests.yml) and run on manual dispatch (`workflow_dispatch`) to control free-tier usage.
+- The integration workflow uses concurrency cancellation (`cancel-in-progress: true`) so repeated triggers do not run multiple overlapping jobs on the same branch.
+- The workflow always shuts down test containers at the end (`if: always()`), including when tests fail.
+
+#### Manually running integration tests in GitHub
+
+Workflow URL:
+
+- `https://github.com/rdcoe/neochat/actions/workflows/integration-tests.yml`
+
+1. Open the repository in GitHub and go to **Actions**.
+2. Select the **Integration Tests** workflow.
+3. Click **Run workflow**.
+4. Choose the target branch and confirm with **Run workflow**.
+5. Open the new run to watch logs and test results.
 
 ## Kubernetes Deployment
 
