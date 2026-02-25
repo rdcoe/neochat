@@ -17,11 +17,14 @@ import java.util.List;
 @ApplicationScoped
 public class EventRepository {
 
-    @Inject
-    MongoEventStore mongoEventStore;
+    private final MongoEventStore mongoEventStore;
+    private final PostgresEventStore postgresEventStore;
 
     @Inject
-    PostgresEventStore postgresEventStore;
+    public EventRepository(MongoEventStore mongoEventStore, PostgresEventStore postgresEventStore) {
+        this.mongoEventStore = mongoEventStore;
+        this.postgresEventStore = postgresEventStore;
+    }
 
     /**
      * Get events for a conversation from both stores

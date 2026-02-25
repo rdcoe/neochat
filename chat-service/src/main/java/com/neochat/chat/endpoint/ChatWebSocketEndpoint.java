@@ -31,17 +31,21 @@ public class ChatWebSocketEndpoint {
     private static final Logger LOG = Logger.getLogger(ChatWebSocketEndpoint.class);
     private static final String CONVERSATION_ID = "conversationId";
 
-    @Inject
-    TokenValidator tokenValidator;
-
-    @Inject
-    ChatEventService chatEventService;
-
-    @Inject
-    ObjectMapper objectMapper;
+    private final TokenValidator tokenValidator;
+    private final ChatEventService chatEventService;
+    private final ObjectMapper objectMapper;
 
     // Track active connections per conversation (for broadcasting)
     private final Map<String, Map<String, WebSocketConnection>> conversationConnections = new ConcurrentHashMap<>();
+
+    @Inject
+    public ChatWebSocketEndpoint(TokenValidator tokenValidator,
+            ChatEventService chatEventService,
+            ObjectMapper objectMapper) {
+        this.tokenValidator = tokenValidator;
+        this.chatEventService = chatEventService;
+        this.objectMapper = objectMapper;
+    }
 
     @OnOpen
     public Uni<Void> onOpen(WebSocketConnection connection) {
